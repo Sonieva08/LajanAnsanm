@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <defs>
+    <linearGradient id="blueGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00209F" />
+      <stop offset="100%" stop-color="#0a196e" />
+    </linearGradient>
+    <linearGradient id="redGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#EF4444" />
+      <stop offset="100%" stop-color="#D21034" />
+    </linearGradient>
+  </defs>
+  <!-- Background circle with smooth shadow feel -->
+  <rect width="120" height="120" rx="30" fill="url(#blueGrad)"/>
+  
+  <!-- Rotating savings symbol (circle of hands / interlocking coins / unity loop) -->
+  <!-- Top coin/hand arc in white and gold/red accent -->
+  <circle cx="60" cy="60" r="38" fill="none" stroke="#FFFFFF" stroke-width="4.5" stroke-dasharray="24 8" stroke-linecap="round" opacity="0.4"/>
+  
+  <!-- Center interlocking loops representing solidarity & savings (sòl) -->
+  <circle cx="48" cy="56" r="18" fill="none" stroke="#FFFFFF" stroke-width="6"/>
+  <circle cx="72" cy="56" r="18" fill="none" stroke="url(#redGrad)" stroke-width="6"/>
+  <path d="M48 64 C 48 76, 72 76, 72 64" fill="none" stroke="#10B981" stroke-width="5" stroke-linecap="round"/>
+  
+  <!-- Gourde / Currency symbol mark small center dot -->
+  <circle cx="60" cy="56" r="4.5" fill="#FFFFFF"/>
+</svg>
