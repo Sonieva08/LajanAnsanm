@@ -1,13 +1,14 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "laravel/laravel",
+    "name": "sonieva08/lajanansanm",
     "type": "project",
-    "description": "The skeleton application for the Laravel framework.",
+    "description": "LajanAnsanm - application web de gestion de tontines (membres, cotisations, tours, versements, portail membre et abonnements).",
     "keywords": ["laravel", "framework"],
     "license": "MIT",
     "require": {
         "php": "^8.2",
         "laravel/framework": "^12.0",
+        "laravel/socialite": "*",
         "laravel/tinker": "^2.10.1"
     },
     "require-dev": {

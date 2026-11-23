@@ -30,6 +30,38 @@ class PasswordResetTest extends TestCase
         Notification::assertSentTo($user, ResetPassword::class);
     }
 
+    public function test_password_reset_link_requests_are_rate_limited_by_ip(): void
+    {
+        Notification::fake();
+        $user = User::factory()->create();
+
+        for ($attempt = 0; $attempt < 6; $attempt++) {
+            $this->post('/forgot-password', ['email' => $user->email])->assertRedirect();
+        }
+
+        $this->post('/forgot-password', ['email' => $user->email])->assertTooManyRequests();
+    }
+
+    public function test_reset_password_link_uses_the_configured_app_url_instead_of_the_request_host(): void
+    {
+        Notification::fake();
+        config(['app.url' => 'https://canonical.example.test']);
+
+        $user = User::factory()->create();
+
+        $this->withHeader('X-Forwarded-Host', 'attacker.example.test')
+            ->post('/forgot-password', ['email' => $user->email]);
+
+        Notification::assertSentTo($user, ResetPassword::class, function ($notification) use ($user) {
+            $url = $notification->toMail($user)->actionUrl;
+
+            $this->assertStringStartsWith('https://canonical.example.test/reset-password/', $url);
+            $this->assertStringNotContainsString('attacker.example.test', $url);
+
+            return true;
+        });
+    }
+
     public function test_reset_password_screen_can_be_rendered(): void
     {
         Notification::fake();
@@ -59,8 +91,8 @@ class PasswordResetTest extends TestCase
             $response = $this->post('/reset-password', [
                 'token' => $notification->token,
                 'email' => $user->email,
-                'password' => 'password',
-                'password_confirmation' => 'password',
+                'password' => 'password1234',
+                'password_confirmation' => 'password1234',
             ]);
 
             $response

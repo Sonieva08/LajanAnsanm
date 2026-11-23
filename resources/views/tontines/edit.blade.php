@@ -1,5 +1,5 @@
 <x-app-layout>
-    <x-page-header :back="route('tontines.show', $tontine)" :title="__('Modifye tontine')" :subtitle="$tontine->name" />
+    <x-page-header :back="route('tontines.show', $tontine)" :title="__('Modifye sòl')" :subtitle="$tontine->name" />
 
     <form method="POST" action="{{ route('tontines.update', $tontine) }}" class="card !p-space-lg space-y-space-lg">
         @method('PUT')

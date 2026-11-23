@@ -33,9 +33,25 @@ class PublicPagesTest extends TestCase
 
     public function test_the_https_badge_is_only_shown_on_a_secure_connection(): void
     {
-        $this->get('/paj-ki-pa-egziste')->assertNotFound()->assertDontSee('HTTPS');
+        $this->withServerVariables(['HTTP_X_FORWARDED_PROTO' => 'http'])
+            ->get('/paj-ki-pa-egziste')
+            ->assertNotFound()
+            ->assertDontSee('HTTPS');
 
-        $this->get('https://127.0.0.1/paj-ki-pa-egziste')->assertNotFound()->assertSee('HTTPS');
+        $this->withServerVariables(['HTTP_X_FORWARDED_PROTO' => 'https'])
+            ->get('/paj-ki-pa-egziste')
+            ->assertNotFound()
+            ->assertSee('HTTPS');
+    }
+
+    public function test_https_forwarded_by_cloudflare_is_used_for_page_assets(): void
+    {
+        $assetUrl = rtrim(config('app.url'), '/').'/images/logo-full.webp';
+
+        $this->withServerVariables(['HTTP_X_FORWARDED_PROTO' => 'https'])
+            ->get('/login')
+            ->assertOk()
+            ->assertSee('srcset="'.$assetUrl.'"', false);
     }
 
     public function test_the_429_page_uses_the_real_retry_delay(): void
@@ -78,9 +94,13 @@ class PublicPagesTest extends TestCase
         $this->actingAs($owner)->get(route('admin.settings'))->assertOk()->assertSee('Chef Pwopriyetè');
     }
 
-    public function test_the_unbuilt_settings_tabs_are_not_clickable(): void
+    public function test_the_settings_tabs_link_to_their_working_pages(): void
     {
-        $this->actingAs($this->owner())->get(route('admin.settings'))->assertOk()->assertSee('Byento');
+        $this->actingAs($this->owner())->get(route('admin.settings'))->assertOk()
+            ->assertDontSee('Byento')
+            ->assertSee(route('admin.settings.security'), false)
+            ->assertSee(route('admin.settings.notifications'), false)
+            ->assertSee(route('admin.plans.payment'), false);
     }
 
     public function test_the_empty_state_variants_render(): void

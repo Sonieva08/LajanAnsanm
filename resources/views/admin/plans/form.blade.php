@@ -13,14 +13,14 @@
         <div>
             <h1 class="font-headline-lg text-headline-lg">{{ $plan->exists ? __('Modifye plan') . ' : ' . $plan->name : __('Nouvo plan') }}</h1>
             @if ($plan->exists && ($subscribers ?? 0) > 0)
-                <p class="font-body-sm text-body-sm text-amber-700">⚠ {{ $subscribers }} {{ __('abòne aktif. Chanjman limit ak fonksyon yo aplike a yo imedyatman. Pri a sèlman pou nouvo abònman.') }}</p>
+                <p class="font-body-sm text-body-sm text-amber-700">⚠ {{ $subscribers }} {{ __('abòne aktif. Modifikasyon plan an pa chanje avantaj yo pandan peryòd aktyèl la; nouvo limit ak fonksyon yo ap aplike lè yo renouvle. Nouvo pri a aplike pou nouvo demann ak renouvèlman.') }}</p>
             @endif
         </div>
     </div>
 
-    <form method="POST" action="{{ $action }}" class="grid lg:grid-cols-12 gap-space-md items-start"
+    <form method="POST" action="{{ $action }}" class="grid lg:grid-cols-12 gap-space-md items-start" data-plan-update-form
           x-data="{ name: @js($val('name', '')), desc: @js($val('description', '')), badge: @js($val('badge', '')),
-                    pm: @js((string) $val('price_monthly', '')), pq: @js((string) $val('price_quarterly', '')), py: @js((string) $val('price_yearly', '')),
+                    pm: @js((string) $val('price_monthly', '')),
                     ut: {{ $unlimT ? 'true' : 'false' }}, um: {{ $unlimM ? 'true' : 'false' }}, mt: @js((string) $val('max_active_tontines', '')), mm: @js((string) $val('max_members_per_tontine', '')),
                     feats: @js(array_values($selected)), all: @js(collect(\App\Support\Features::ALL)->map(fn ($f) => __($f[0]))->all()) }">
         @csrf
@@ -49,13 +49,13 @@
                 <section class="card !p-space-lg space-y-space-md">
                     <h2 class="font-title-lg text-title-lg">2. {{ __('Tarif pa peryòd') }} ({{ $cur }})</h2>
                     <div class="grid sm:grid-cols-3 gap-space-md">
-                        <div><label class="label">{{ __('Pri pa mwa') }}</label><input type="number" step="0.01" min="0" name="price_monthly" class="input" x-model="pm"></div>
-                        <div><label class="label">{{ __('Pri pou 3 mwa') }}</label><input type="number" step="0.01" min="0" name="price_quarterly" class="input" x-model="pq">
-                            <p class="font-body-sm text-body-sm text-emerald-700 mt-1" x-show="pm && pq && pq < pm * 3" x-text="'−' + Math.round((1 - pq / (pm * 3)) * 100) + '%'"></p></div>
-                        <div><label class="label">{{ __('Pri pou 12 mwa') }}</label><input type="number" step="0.01" min="0" name="price_yearly" class="input" x-model="py">
-                            <p class="font-body-sm text-body-sm text-emerald-700 mt-1" x-show="pm && py && py < pm * 12" x-text="'−' + Math.round((1 - py / (pm * 12)) * 100) + '%'"></p></div>
+                        <div><label class="label">{{ __('Pri pa mwa') }}</label><input type="number" step="1" min="0" name="price_monthly" class="input" x-model="pm"></div>
+                        <div><label class="label">{{ __('Pri pou 3 mwa') }}</label><input type="number" step="1" class="input bg-surface-container-low" :value="pm !== '' ? Math.round(Number(pm) * 3 * 0.97) : ''" readonly>
+                            <p class="font-body-sm text-body-sm text-emerald-700 mt-1" x-show="pm !== ''">{{ __('3% rabè') }}</p></div>
+                        <div><label class="label">{{ __('Pri pou 12 mwa') }}</label><input type="number" step="1" class="input bg-surface-container-low" :value="pm !== '' ? Math.round(Number(pm) * 12 * 0.90) : ''" readonly>
+                            <p class="font-body-sm text-body-sm text-emerald-700 mt-1" x-show="pm !== ''">{{ __('10% rabè') }}</p></div>
                     </div>
-                    <p class="font-body-sm text-body-sm text-on-surface-variant">{{ __('Kite yon peryòd vid si ou pa vle ofri li.') }}</p>
+                    <p class="font-body-sm text-body-sm text-on-surface-variant">{{ __('Pri 3 mwa ak 12 mwa yo kalkile otomatikman apati pri pa mwa a.') }}</p>
                 </section>
             @endunless
 
@@ -63,12 +63,12 @@
                 <h2 class="font-title-lg text-title-lg">3. {{ __('Limit') }}</h2>
                 <div class="grid sm:grid-cols-2 gap-space-md">
                     <div>
-                        <label class="label">{{ __('Tontin aktif maksimòm') }}</label>
+                        <label class="label">{{ __('Sòl aktif maksimòm') }}</label>
                         <input type="number" min="1" name="max_active_tontines" class="input" x-model="mt" :disabled="ut">
                         <label class="flex items-center gap-2 mt-2"><input type="checkbox" name="unlimited_tontines" value="1" x-model="ut" class="rounded border-slate-300 text-primary-container"> {{ __('Ilimite') }}</label>
                     </div>
                     <div>
-                        <label class="label">{{ __('Manm maksimòm pa tontin') }}</label>
+                        <label class="label">{{ __('Manm maksimòm pa sòl') }}</label>
                         <input type="number" min="2" name="max_members_per_tontine" class="input" x-model="mm" :disabled="um">
                         <label class="flex items-center gap-2 mt-2"><input type="checkbox" name="unlimited_members" value="1" x-model="um" class="rounded border-slate-300 text-primary-container"> {{ __('Ilimite') }}</label>
                     </div>
@@ -102,8 +102,8 @@
                 <p class="font-body-sm text-body-sm text-on-surface-variant" x-text="desc"></p>
                 <p class="font-currency-display text-currency-display tabular-nums"><span x-text="pm ? Number(pm).toLocaleString('en-US') : '—'"></span> <span class="font-title-md text-title-md text-on-surface-variant">{{ $cur }} / {{ __('mwa') }}</span></p>
                 <ul class="space-y-1.5 font-body-md text-body-md">
-                    <li class="flex items-center gap-2"><span class="material-symbols-outlined text-[18px] text-emerald-500">check_circle</span><span x-text="ut ? '{{ __('Tontin ilimite') }}' : (mt || '?') + ' {{ __('tontin aktif') }}'"></span></li>
-                    <li class="flex items-center gap-2"><span class="material-symbols-outlined text-[18px] text-emerald-500">check_circle</span><span x-text="'{{ __('Jiska') }} ' + (um ? '∞' : (mm || '?')) + ' {{ __('manm pa tontin') }}'"></span></li>
+                    <li class="flex items-center gap-2"><span class="material-symbols-outlined text-[18px] text-emerald-500">check_circle</span><span x-text="ut ? '{{ __('Sòl ilimite') }}' : (mt || '?') + ' {{ __('sòl aktif') }}'"></span></li>
+                    <li class="flex items-center gap-2"><span class="material-symbols-outlined text-[18px] text-emerald-500">check_circle</span><span x-text="'{{ __('Jiska') }} ' + (um ? '∞' : (mm || '?')) + ' {{ __('manm pa sòl') }}'"></span></li>
                     <template x-for="(label, key) in all" :key="key">
                         <li class="flex items-center gap-2" :class="feats.includes(key) ? '' : 'text-slate-400 line-through'">
                             <span class="material-symbols-outlined text-[18px]" :class="feats.includes(key) ? 'text-emerald-500' : ''" x-text="feats.includes(key) ? 'check_circle' : 'remove_circle'"></span><span x-text="label"></span>
@@ -111,11 +111,13 @@
                     </template>
                 </ul>
             </div>
-            @if ($plan->exists && ! $plan->is_free)
-                <form method="POST" action="{{ route('admin.plans.destroy', $plan) }}" onsubmit="return confirm('{{ __('Efase plan sa a?') }}')">@csrf @method('DELETE')
-                    <button class="font-label-md text-label-md text-secondary underline">{{ __('Efase plan sa a') }}</button>
-                </form>
-            @endif
         </div>
     </form>
+    @if ($plan->exists && ! $plan->is_free)
+        <form method="POST" action="{{ route('admin.plans.destroy', $plan) }}" onsubmit="return confirm('{{ __('Efase plan sa a?') }}')" data-plan-delete-form>
+            @csrf
+            @method('DELETE')
+            <button class="font-label-md text-label-md text-secondary underline">{{ __('Efase plan sa a') }}</button>
+        </form>
+    @endif
 </x-admin-layout>

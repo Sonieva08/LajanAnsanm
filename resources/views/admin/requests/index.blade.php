@@ -38,11 +38,22 @@
 
                 <dl class="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 font-body-sm text-body-sm">
                     <div><dt class="text-on-surface-variant">{{ __('Metòd') }}</dt><dd class="font-label-lg text-label-lg">{{ $methodLabel[$r->payment_method] ?? $r->payment_method }}</dd></div>
-                    <div><dt class="text-on-surface-variant">{{ __('Telefòn moun ki peye a') }}</dt><dd class="font-label-lg text-label-lg tabular-nums">{{ $r->payer_phone }}</dd></div>
-                    <div><dt class="text-on-surface-variant">{{ __('Kòd tranzaksyon') }}</dt><dd class="font-label-lg text-label-lg font-mono">{{ $r->transaction_ref }}</dd></div>
+                    @if ($r->payer_phone)
+                        <div><dt class="text-on-surface-variant">{{ __('Nimewo kont ki te voye lajan an') }}</dt><dd class="font-label-lg text-label-lg tabular-nums">{{ $r->payer_phone }}</dd></div>
+                    @endif
+                    <div><dt class="text-on-surface-variant">{{ __('Nimewo/kont ki te resevwa lajan an') }}</dt><dd class="font-label-lg text-label-lg tabular-nums">{{ $r->recipient_account ?: '—' }}</dd></div>
+                    @if ($r->transaction_ref)
+                        <div><dt class="text-on-surface-variant">{{ __('Kòd tranzaksyon') }}</dt><dd class="font-label-lg text-label-lg font-mono">{{ $r->transaction_ref }}</dd></div>
+                    @endif
                     <div><dt class="text-on-surface-variant">{{ __('Referans nòt') }}</dt><dd class="font-label-lg text-label-lg font-mono">{{ $r->reference_code }}</dd></div>
                 </dl>
                 @if ($r->note)<p class="font-body-sm text-body-sm text-on-surface-variant">{{ __('Nòt') }} : {{ $r->note }}</p>@endif
+                @if ($r->hasReceipt())
+                    <a href="{{ route('admin.requests.receipt', $r) }}" target="_blank" rel="noopener noreferrer"
+                       class="inline-flex items-center gap-1.5 font-label-md text-label-md text-primary-container underline">
+                        <span class="material-symbols-outlined text-[18px]">receipt_long</span>{{ __('Gade resi peman an') }}
+                    </a>
+                @endif
 
                 @if ($r->status === 'pending')
                     <div class="flex flex-wrap items-center justify-between gap-3">
@@ -61,7 +72,7 @@
                             <p class="font-body-sm text-body-sm text-on-surface-variant mt-1">{{ __('Vid = nòmal selon peryòd la.') }}</p>
                         </div>
                         <div><label class="label">{{ __('Nòt entèn (opsyonèl)') }}</label><input name="note" class="input" maxlength="300"></div>
-                        <button class="btn-success sm:col-span-2" onclick="return confirm('{{ __('Konfime peman an epi aktive abònman an?') }}')">{{ __('Konfime epi aktive') }}</button>
+                        <button class="btn-success sm:col-span-2" x-on:click.prevent="if (confirm(@js(__('Konfime peman an epi aktive abònman an?')))) $el.form.submit()">{{ __('Konfime epi aktive') }}</button>
                     </form>
 
                     <form x-show="open === 'reject'" x-cloak method="POST" action="{{ route('admin.requests.reject', $r) }}" class="rounded-xl bg-error-container/40 p-space-md space-y-space-sm">

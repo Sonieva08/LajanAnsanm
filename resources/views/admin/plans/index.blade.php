@@ -9,6 +9,13 @@
         <a href="{{ route('admin.plans.create') }}" class="btn-primary"><span class="material-symbols-outlined">add</span> {{ __('Nouvo plan') }}</a>
     </div>
 
+    <div class="flex items-center gap-1 bg-surface-container-low p-1.5 rounded-xl mb-space-md overflow-x-auto">
+        <span class="flex items-center gap-2 px-4 py-2 rounded-lg bg-surface-container-lowest text-primary font-label-md text-label-md shadow-sm whitespace-nowrap"><span class="material-symbols-outlined text-[18px]">tune</span> {{ __('Lis plan yo') }}</span>
+        <a href="{{ route('admin.plans.payment') }}" class="flex items-center gap-2 px-4 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-lowest font-label-md text-label-md whitespace-nowrap"><span class="material-symbols-outlined text-[18px]">account_balance_wallet</span> {{ __('Kote kliyan yo voye peman an ak règ') }}</a>
+        <a href="{{ route('admin.subscriptions') }}" class="flex items-center gap-2 px-4 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-lowest font-label-md text-label-md whitespace-nowrap"><span class="material-symbols-outlined text-[18px]">card_membership</span> {{ __('Lis abònman yo') }}</a>
+        <span class="flex items-center gap-2 px-4 py-2 rounded-lg text-slate-400 font-label-md text-label-md whitespace-nowrap cursor-not-allowed"><span class="material-symbols-outlined text-[18px]">history</span> {{ __('Istorik chanjman') }} <span class="badge-muted !py-0 !px-2 text-[10px]">{{ __('Byento') }}</span></span>
+    </div>
+
     @if ($errors->has('plan'))<div class="alert-err mb-space-md">{{ $errors->first('plan') }}</div>@endif
 
     <div class="grid md:grid-cols-2 xl:grid-cols-4 gap-space-md mb-space-lg">
@@ -37,8 +44,8 @@
                 @endif
 
                 <ul class="font-body-md text-body-md space-y-1 text-on-surface-variant">
-                    <li>{{ $plan->max_active_tontines ?? __('Ilimite') }} {{ __('tontin aktif') }}</li>
-                    <li>{{ __('Jiska') }} {{ $plan->max_members_per_tontine ?? '∞' }} {{ __('manm pa tontin') }}</li>
+                    <li>{{ $plan->max_active_tontines ?? __('Ilimite') }} {{ __('sòl aktif') }}</li>
+                    <li>{{ __('Jiska') }} {{ $plan->max_members_per_tontine ?? '∞' }} {{ __('manm pa sòl') }}</li>
                     <li>{{ count($plan->features ?? []) }} / {{ count(\App\Support\Features::ALL) }} {{ __('fonksyon') }}</li>
                 </ul>
 
@@ -50,34 +57,4 @@
             </div>
         @endforeach
     </div>
-
-    <form method="POST" action="{{ route('admin.plans.rules') }}" class="card !p-space-lg space-y-space-md max-w-3xl">
-        @csrf
-        <h2 class="font-title-lg text-title-lg">{{ __('Règ jeneral yo') }}</h2>
-
-        <div class="grid sm:grid-cols-2 gap-space-md">
-            <div>
-                <label class="label" for="grace_days">{{ __('Jou gras apre ekspirasyon') }}</label>
-                <input id="grace_days" type="number" name="grace_days" min="0" max="60" class="input" value="{{ old('grace_days', $rules['grace_days']) }}" required>
-                <p class="font-body-sm text-body-sm text-on-surface-variant mt-1">{{ __('Pandan jou sa yo, kliyan an kenbe tout avantaj plan an. Apre sa, li tounen sou plan gratis la.') }}</p>
-                <x-input-error :messages="$errors->get('grace_days')" class="mt-1" />
-            </div>
-            <div>
-                <label class="label" for="remind_days">{{ __('Rapèl anvan ekspirasyon (jou)') }}</label>
-                <input id="remind_days" type="number" name="remind_days" min="0" max="30" class="input" value="{{ old('remind_days', $rules['remind_days']) }}" required>
-            </div>
-        </div>
-
-        <h3 class="font-title-md text-title-md pt-space-sm">{{ __('Kote kliyan yo voye peman an') }}</h3>
-        <p class="font-body-sm text-body-sm text-on-surface-variant -mt-2">{{ __('Yon metòd parèt sou paj demann lan sèlman si ou ranpli li. Si ou pa ranpli okenn, pa gen moun ki ka mande abònman.') }}</p>
-        <div class="grid sm:grid-cols-2 gap-space-md">
-            <div><label class="label">{{ __('Nimewo MonCash') }}</label><input name="moncash_number" class="input" value="{{ old('moncash_number', $payment['moncash_number']) }}" placeholder="+509 ..."></div>
-            <div><label class="label">{{ __('Non sou kont MonCash') }}</label><input name="moncash_name" class="input" value="{{ old('moncash_name', $payment['moncash_name']) }}"></div>
-            <div><label class="label">{{ __('Nimewo NatCash') }}</label><input name="natcash_number" class="input" value="{{ old('natcash_number', $payment['natcash_number']) }}" placeholder="+509 ..."></div>
-            <div><label class="label">{{ __('Non sou kont NatCash') }}</label><input name="natcash_name" class="input" value="{{ old('natcash_name', $payment['natcash_name']) }}"></div>
-        </div>
-        <div><label class="label">{{ __('Enfòmasyon bank (opsyonèl)') }}</label><textarea name="bank_info" rows="2" maxlength="300" class="input !min-h-0">{{ old('bank_info', $payment['bank_info']) }}</textarea></div>
-        <div><label class="label">{{ __('Enstriksyon adisyonèl (opsyonèl)') }}</label><textarea name="instructions" rows="2" maxlength="400" class="input !min-h-0">{{ old('instructions', $payment['instructions']) }}</textarea></div>
-        <button class="btn-primary"><span class="material-symbols-outlined">save</span> {{ __('Sove règ yo') }}</button>
-    </form>
 </x-admin-layout>

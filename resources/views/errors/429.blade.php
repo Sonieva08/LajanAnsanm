@@ -12,7 +12,7 @@
                 <div class="bg-primary-container h-full rounded-full transition-all duration-1000 ease-linear" id="cd-bar" style="width: 100%"></div>
             </div>
         </div>
-        <script>
+        <script nonce="{{ request()->attributes->get('csp_nonce') }}">
             (function () {
                 var total = {{ $seconds }}, left = total;
                 var label = document.getElementById('cd-label'), bar = document.getElementById('cd-bar');
@@ -25,6 +25,6 @@
             })();
         </script>
     </x-slot:extra>
-    <button type="button" onclick="location.assign(location.href)" class="btn-primary flex-1"><span class="material-symbols-outlined">replay</span> {{ __('Re-eseye kounye a') }}</button>
+    <button type="button" x-on:click="location.assign(location.href)" class="btn-primary flex-1"><span class="material-symbols-outlined">replay</span> {{ __('Re-eseye kounye a') }}</button>
     <a href="{{ url('/dashboard') }}" class="btn-secondary flex-1 !bg-surface-container-low"><span class="material-symbols-outlined">home</span> {{ __('Retounen sou Akèy') }}</a>
 </x-error-layout>

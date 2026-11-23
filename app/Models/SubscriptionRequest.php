@@ -4,20 +4,21 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Storage;
 
 class SubscriptionRequest extends Model
 {
     public const METHODS = ['moncash' => 'MonCash', 'natcash' => 'NatCash', 'bank' => 'Bank'];
 
     protected $fillable = [
-        'user_id', 'plan_id', 'billing_period', 'amount', 'payment_method', 'payer_phone',
-        'transaction_ref', 'reference_code', 'note', 'status', 'reviewed_by', 'reviewed_at',
-        'review_note', 'subscription_id',
+        'user_id', 'plan_id', 'billing_period', 'amount', 'payment_method', 'payer_phone', 'recipient_account',
+        'transaction_ref', 'receipt_path', 'reference_code', 'note', 'status', 'reviewed_by', 'reviewed_at',
+        'review_note', 'subscription_id', 'plan_snapshot',
     ];
 
     protected function casts(): array
     {
-        return ['amount' => 'decimal:2', 'reviewed_at' => 'datetime'];
+        return ['amount' => 'decimal:2', 'reviewed_at' => 'datetime', 'plan_snapshot' => 'array'];
     }
 
     public function user(): BelongsTo
@@ -33,6 +34,16 @@ class SubscriptionRequest extends Model
     public function reviewer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'reviewed_by');
+    }
+
+    public function hasReceipt(): bool
+    {
+        return filled($this->receipt_path);
+    }
+
+    public function receiptExists(): bool
+    {
+        return $this->hasReceipt() && Storage::disk('local')->exists($this->receipt_path);
     }
 
     // Code à écrire dans la note du transfert pour identifier le paiement (stable entre l'affichage et l'envoi)

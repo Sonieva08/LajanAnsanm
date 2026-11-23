@@ -35,4 +35,20 @@ return [
         ],
     ],
 
+    'google' => [
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'redirect' => env('GOOGLE_REDIRECT_URI'),
+    ],
+
+    'moncashconnect' => [
+        'enabled' => env('MONCASHCONNECT_ENABLED', false),
+        'secret' => env('MONCASHCONNECT_SECRET_KEY'),
+        'webhook_secret' => env('MONCASHCONNECT_WEBHOOK_SECRET'),
+        'origin' => env('MONCASHCONNECT_ORIGIN', env('APP_URL')),
+        'base_url' => env('MONCASHCONNECT_BASE_URL', 'https://api.moncashconnect.com/v1'),
+        'verify_with_api' => env('MONCASHCONNECT_VERIFY_WITH_API', true),
+        'max_amount' => env('MONCASHCONNECT_MAX_AMOUNT', 1000000),
+    ],
+
 ];

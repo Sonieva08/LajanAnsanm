@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Models\Invitation;
 use App\Models\Plan;
 use App\Models\Setting;
 use App\Models\Subscription;
@@ -40,11 +41,11 @@ final class Entitlements
         }
 
         if ($sub->ends_at->gte(now())) {
-            return new self($user, $sub->plan, 'active', $sub, $grace);
+            return new self($user, $sub->effectivePlan(), 'active', $sub, $grace);
         }
 
         if ($sub->ends_at->copy()->addDays($grace)->gte(now())) {
-            return new self($user, $sub->plan, 'grace', $sub, $grace);
+            return new self($user, $sub->effectivePlan(), 'grace', $sub, $grace);
         }
 
         return new self($user, Plan::free(), 'expired', $sub, $grace);
@@ -57,7 +58,7 @@ final class Entitlements
 
     public function has(string $feature): bool
     {
-        return $this->state === 'owner' || $this->plan->allows($feature);
+        return $this->state === 'owner' || ($this->isPaid() && $this->plan->allows($feature));
     }
 
     public function maxTontines(): ?int
@@ -83,17 +84,45 @@ final class Entitlements
 
     public function canCreateTontine(): bool
     {
+        if ($this->state === 'owner') {
+            return true;
+        }
+        if (! $this->isPaid()) {
+            return false;
+        }
+
         $max = $this->maxTontines();
 
-        return $this->state === 'owner' || $max === null || $this->activeTontines() < $max;
+        return $max === null || $this->activeTontines() < $max;
     }
 
-    public function canAddMember(Tontine $t): bool
+    public function canAddMember(Tontine $t, ?int $excludeInvitationId = null): bool
     {
         $max = $this->maxMembers();
 
-        return $this->state === 'owner' || $t->is_legacy || $max === null
-            || $t->members()->where('is_active', true)->count() < $max;
+        if ($this->state === 'owner' || $t->is_legacy || $max === null) {
+            return true;
+        }
+        if (! $this->isPaid()) {
+            return false;
+        }
+
+        $members = $t->members()->where(function (Builder $query) {
+            $query->where('is_active', true)
+                ->orWhere(function (Builder $pending) {
+                    $pending->whereNotNull('invited_at')->whereNull('invitation_accepted_at');
+                });
+        })->count();
+
+        $invitations = Invitation::query()
+            ->where('tontine_id', $t->id)
+            ->whereNull('accepted_at')
+            ->whereNull('revoked_at')
+            ->where('expires_at', '>', now())
+            ->when($excludeInvitationId, fn (Builder $query) => $query->whereKeyNot($excludeInvitationId))
+            ->count();
+
+        return $members + $invitations < $max;
     }
 
     // Une tontine est modifiable sauf si elle dépasse les limites du plan actuel (lecture seule)
@@ -101,6 +130,9 @@ final class Entitlements
     {
         if ($this->state === 'owner' || $t->is_legacy || $t->status === 'completed') {
             return true;
+        }
+        if (! $this->isPaid()) {
+            return false;
         }
 
         $maxMembers = $this->maxMembers();

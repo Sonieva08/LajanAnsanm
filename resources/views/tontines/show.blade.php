@@ -78,6 +78,13 @@
             </div>
         @endif
 
+        @if ($tontine->disputedPayoutsCount() > 0)
+            <a href="{{ route('tontines.payouts.index', $tontine) }}" class="alert-err flex items-center gap-2" data-dispute-alert>
+                <span class="material-symbols-outlined">report</span>
+                <span class="font-label-lg text-label-lg">{{ __('Yon benefisyè di li pa resevwa lajan li. Gade vèsman yo.') }}</span>
+            </a>
+        @endif
+
         {{-- Accès rapides --}}
         <div class="grid grid-cols-2 gap-space-sm">
             @php
@@ -115,10 +122,22 @@
             </a>
         @endif
 
+        @if ($tontine->member_portal_enabled)
+            @php $pendingCount = $tontine->pendingDeclarationsCount(); @endphp
+            <a href="{{ route('tontines.declarations.index', $tontine) }}" class="btn-secondary w-full" data-declarations-link>
+                <span class="material-symbols-outlined">fact_check</span> {{ __('Peman manm yo deklare') }}
+                @if ($pendingCount > 0)<span class="badge-wait">{{ $pendingCount }}</span>@endif
+            </a>
+        @endif
+
+        <a href="{{ route('tontines.portal.edit', $tontine) }}" class="btn-secondary w-full">
+            <span class="material-symbols-outlined">smartphone</span> {{ __('Pòtay manm yo') }}
+        </a>
+
         <form method="POST" action="{{ route('tontines.destroy', $tontine) }}" class="text-center pt-space-md"
-              onsubmit="return confirm('{{ __('Ou sèten ou vle efase tontine sa a?') }}')">
+              onsubmit="return confirm('{{ __('Ou sèten ou vle efase sòl sa a?') }}')">
             @csrf @method('DELETE')
-            <button class="font-label-md text-label-md text-secondary underline">{{ __('Efase tontine sa a') }}</button>
+            <button class="font-label-md text-label-md text-secondary underline">{{ __('Efase sòl sa a') }}</button>
         </form>
     </div>
 </x-app-layout>

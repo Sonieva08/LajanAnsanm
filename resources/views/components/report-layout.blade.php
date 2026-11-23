@@ -5,7 +5,9 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ $title }}</title>
-    <link rel="icon" type="image/svg+xml" href="{{ asset('images/logo.svg') }}">
+    <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="any">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('images/favicon-32.png') }}">
+    <link rel="apple-touch-icon" href="{{ asset('images/apple-touch-icon.png') }}">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
@@ -24,17 +26,17 @@
                     <a href="{{ route('plans') }}" class="btn-secondary btn-sm opacity-70">CSV · Premium</a>
                 @endif
             @endif
-            <button onclick="window.print()" class="btn-primary btn-sm">{{ __('PDF / Enprime') }}</button>
+            <button x-on:click="window.print()" class="btn-primary btn-sm">{{ __('PDF / Enprime') }}</button>
         </div>
     </div>
 
     <main class="max-w-3xl mx-auto bg-white shadow print:shadow-none my-4 print:my-0 p-6 sm:p-10 text-sm">
         <div class="flex items-center justify-between border-b-2 border-primary-container pb-3 mb-5">
             <div class="flex items-center gap-2">
-                <img src="{{ asset('images/logo.svg') }}" alt="" class="h-9 w-9">
+                <img src="{{ asset('images/logo-icon-sm.png') }}" alt="" class="h-9 w-9">
                 <div>
                     <p class="font-bold text-primary-container text-base leading-tight">LajanAnsanm</p>
-                    <p class="text-xs text-slate-500">{{ __('Rapò tontin') }}</p>
+                    <p class="text-xs text-slate-500">{{ __('Rapò sòl') }}</p>
                 </div>
             </div>
             <p class="text-xs text-slate-500 text-right">

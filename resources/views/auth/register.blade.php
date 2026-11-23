@@ -27,4 +27,8 @@
         </div>
         <button class="btn-primary w-full">{{ __('Kreye kont') }} <span class="material-symbols-outlined">arrow_forward</span></button>
     </form>
+    @include('partials.google-button')
+    <p class="mt-space-md text-center font-body-sm text-body-sm text-on-surface-variant">
+        <a href="{{ route('terms') }}" class="text-primary-container underline">{{ __('Kondisyon Sèvis') }}</a>
+    </p>
 </x-guest-layout>

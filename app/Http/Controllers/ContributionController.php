@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\Contribution;
 use App\Models\Cycle;
+use App\Models\PaymentDeclaration;
 use App\Models\Tontine;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -53,10 +55,6 @@ class ContributionController extends Controller
     {
         $this->authorize('update', $tontine);
 
-        if ($cycle->status !== 'open') {
-            return back()->withErrors(['contribution' => __('Tour sa a pa ouvè.')]);
-        }
-
         $data = $request->validate([
             'member_id' => [
                 'required',
@@ -69,11 +67,28 @@ class ContributionController extends Controller
             'note' => ['nullable', 'string', 'max:500'],
         ]);
 
-        if ($cycle->contributions()->where('member_id', $data['member_id'])->exists()) {
-            return back()->withErrors(['contribution' => __('Manm sa a deja peye pou tou sa a.')]);
-        }
+        $result = DB::transaction(function () use ($cycle, $tontine, $data) {
+            $lockedCycle = Cycle::whereKey($cycle->id)->lockForUpdate()->firstOrFail();
 
-        $cycle->contributions()->create($data + ['amount' => $tontine->amount_per_period]);
+            if ($lockedCycle->status !== 'open') {
+                return ['error' => __('Tour sa a pa ouvè.')];
+            }
+
+            if ($lockedCycle->contributions()->where('member_id', $data['member_id'])->exists()) {
+                return ['error' => __('Manm sa a deja peye pou tou sa a.')];
+            }
+
+            $contribution = $lockedCycle->contributions()->create($data + ['amount' => $tontine->amount_per_period]);
+
+            PaymentDeclaration::where('cycle_id', $lockedCycle->id)->where('member_id', $data['member_id'])->where('status', 'pending')
+                ->update(['status' => 'approved', 'reviewed_at' => now(), 'contribution_id' => $contribution->id]);
+
+            return ['ok' => true];
+        });
+
+        if (isset($result['error'])) {
+            return back()->withErrors(['contribution' => $result['error']]);
+        }
 
         return redirect()
             ->route('tontines.contributions.index', [$tontine, 'cycle' => $cycle->id])
@@ -84,11 +99,21 @@ class ContributionController extends Controller
     {
         $this->authorize('update', $tontine);
 
-        if ($cycle->status !== 'open') {
-            return back()->withErrors(['contribution' => __('Tour sa a pa ouvè.')]);
-        }
+        $result = DB::transaction(function () use ($cycle, $contribution) {
+            $lockedCycle = Cycle::whereKey($cycle->id)->lockForUpdate()->firstOrFail();
 
-        $contribution->delete();
+            if ($lockedCycle->status !== 'open') {
+                return ['error' => __('Tour sa a pa ouvè.')];
+            }
+
+            $lockedCycle->contributions()->whereKey($contribution->id)->firstOrFail()->delete();
+
+            return ['ok' => true];
+        });
+
+        if (isset($result['error'])) {
+            return back()->withErrors(['contribution' => $result['error']]);
+        }
 
         return redirect()
             ->route('tontines.contributions.index', [$tontine, 'cycle' => $cycle->id])

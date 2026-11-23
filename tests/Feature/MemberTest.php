@@ -15,7 +15,7 @@ class MemberTest extends TestCase
     {
         $t = $this->makeTontine(null, 2);
 
-        $this->actingAs($t->admin)->post(route('tontines.members.store', $t), ['name' => 'Nouveau', 'phone' => '+509 3333 4444'])
+        $this->actingAs($t->admin)->post(route('tontines.members.store', $t), ['name' => 'Nouveau', 'phone' => '+509 3333 4444', 'consent' => 1])
             ->assertSessionHasNoErrors();
 
         $this->assertSame(3, $t->members()->where('name', 'Nouveau')->first()->position);

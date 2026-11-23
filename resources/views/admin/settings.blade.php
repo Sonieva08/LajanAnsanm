@@ -21,16 +21,7 @@
             @endif
         </div>
 
-        <div class="flex items-center gap-1 bg-surface-container-low p-1.5 rounded-xl overflow-x-auto">
-            <span class="flex items-center gap-2 px-4 py-2 rounded-lg bg-surface-container-lowest text-primary font-title-md text-title-md shadow-sm whitespace-nowrap">
-                <span class="material-symbols-outlined text-secondary text-[18px]">construction</span> {{ __('Mòd antretyen') }}
-            </span>
-            @foreach ([__('Sekirite ak aksè'), __('Peman ak API'), __('Notifikasyon SMS')] as $soon)
-                <span class="flex items-center gap-2 px-4 py-2 rounded-lg text-slate-400 font-title-md text-title-md whitespace-nowrap cursor-not-allowed" title="{{ __('Byento') }}">
-                    {{ $soon }} <span class="badge-muted !py-0 !px-2 text-[10px]">{{ __('Byento') }}</span>
-                </span>
-            @endforeach
-        </div>
+        @include('admin.settings._tabs', ['active' => 'maintenance'])
     </div>
 
     <div class="grid lg:grid-cols-12 gap-space-md items-start"

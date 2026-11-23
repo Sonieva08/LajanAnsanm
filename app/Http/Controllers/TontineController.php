@@ -35,7 +35,7 @@ class TontineController extends Controller
 
         return redirect()
             ->route('tontines.show', $tontine)
-            ->with('status', __('Tontine kreye.'));
+            ->with('status', __('Sòl kreye.'));
     }
 
     public function show(Tontine $tontine): View
@@ -70,7 +70,7 @@ class TontineController extends Controller
 
         return redirect()
             ->route('tontines.show', $tontine)
-            ->with('status', __('Tontine modifye.'));
+            ->with('status', __('Sòl modifye.'));
     }
 
     public function destroy(Tontine $tontine): RedirectResponse
@@ -81,6 +81,6 @@ class TontineController extends Controller
 
         return redirect()
             ->route('tontines.index')
-            ->with('status', __('Tontine efase.'));
+            ->with('status', __('Sòl efase.'));
     }
 }

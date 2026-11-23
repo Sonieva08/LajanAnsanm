@@ -28,7 +28,7 @@
         @elseif ($__ent->state === 'expired' && $__ro > 0)
             <div class="mb-space-md flex items-center gap-2 bg-error-container/70 text-on-error-container rounded-xl px-4 py-3" data-expired-banner>
                 <span class="material-symbols-outlined text-[20px] shrink-0">lock</span>
-                <p class="flex-1 font-label-md text-label-md">{{ __('Abònman ou fini. :n tontin an lekti sèlman.', ['n' => $__ro]) }}</p>
+                <p class="flex-1 font-label-md text-label-md">{{ __('Abònman ou fini. :n sòl la lekti sèlman.', ['n' => $__ro]) }}</p>
                 <a href="{{ route('plans') }}" class="btn-danger btn-sm">{{ __('Renouvle') }}</a>
             </div>
         @endif

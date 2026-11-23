@@ -13,6 +13,7 @@ final class Features
         'restart_round' => ['Relanse yon nouvo sik', 'Kòmanse yon nouvo sik lè tou yo fini.', 'autorenew'],
         'whatsapp_reminders' => ['Rapèl WhatsApp', 'Voye rapèl bay manm ki an reta.', 'chat'],
         'organizer_fee' => ['Kòmisyon òganizatè', 'Retni yon pousantaj sou chak vèsman.', 'percent'],
+        'member_portal' => ['Espas manm (lyen pèsonèl)', 'Manm yo wè kalandriye a epi deklare peman yo.', 'groups'],
     ];
 
     public static function keys(): array

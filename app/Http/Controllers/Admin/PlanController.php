@@ -6,10 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
 use App\Models\Plan;
 use App\Models\Setting;
+use App\Models\Subscription;
+use App\Models\SubscriptionRequest;
 use App\Support\Features;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -23,6 +26,21 @@ class PlanController extends Controller
                 ->get(),
             'rules' => Setting::subscriptionRules(),
             'payment' => Setting::paymentInfo(),
+        ]);
+    }
+
+    // Coordonnées de paiement et règles d'expiration
+    public function payment(): View
+    {
+        return view('admin.plans.payment', [
+            'rules' => Setting::subscriptionRules(),
+            'payment' => Setting::paymentInfo(),
+            'meta' => Setting::rulesMeta(),
+            'stats' => [
+                'active' => Subscription::where('status', 'active')->where('ends_at', '>=', now())->count(),
+                'pending' => SubscriptionRequest::where('status', 'pending')->count(),
+                'revenue' => (float) SubscriptionRequest::where('status', 'approved')->where('reviewed_at', '>=', now()->startOfMonth())->sum('amount'),
+            ],
         ]);
     }
 
@@ -106,12 +124,46 @@ class PlanController extends Controller
             'natcash_name' => ['nullable', 'string', 'max:80'],
             'bank_info' => ['nullable', 'string', 'max:300'],
             'instructions' => ['nullable', 'string', 'max:400'],
+            'moncash_qr' => ['nullable', 'file', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
+            'natcash_qr' => ['nullable', 'file', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
+            'remove_moncash_qr' => ['nullable', 'boolean'],
+            'remove_natcash_qr' => ['nullable', 'boolean'],
         ]);
 
         Setting::set('subscription', ['grace_days' => (int) $data['grace_days'], 'remind_days' => (int) $data['remind_days']]);
-        Setting::set('payment', collect($data)->except(['grace_days', 'remind_days'])->all());
+        $payment = Setting::paymentInfo();
+        foreach (['moncash_number', 'moncash_name', 'natcash_number', 'natcash_name', 'bank_info', 'instructions'] as $key) {
+            $payment[$key] = filled($data[$key] ?? null) ? trim($data[$key]) : null;
+        }
 
-        return back()->with('status', __('Règ yo sove.'));
+        foreach (['moncash', 'natcash'] as $method) {
+            $pathKey = $method.'_qr_path';
+            $fileKey = $method.'_qr';
+            $removeKey = 'remove_'.$fileKey;
+
+            if ($request->hasFile($fileKey)) {
+                $newPath = $request->file($fileKey)->store('subscription-payment-qrs', 'local');
+                if (! $newPath) {
+                    throw new \RuntimeException('Unable to store uploaded payment QR image.');
+                }
+                if ($payment[$pathKey]) {
+                    Storage::disk('local')->delete($payment[$pathKey]);
+                }
+                $payment[$pathKey] = $newPath;
+            } elseif ($request->boolean($removeKey)) {
+                if ($payment[$pathKey]) {
+                    Storage::disk('local')->delete($payment[$pathKey]);
+                }
+                $payment[$pathKey] = null;
+            }
+        }
+
+        Setting::set('payment', $payment);
+        ActivityLog::record('rules_updated', $request->user(), ['grace_days' => (int) $data['grace_days']]);
+
+        Setting::set('rules_meta', ['by' => $request->user()->name, 'at' => now()->toIso8601String()]);
+
+        return redirect()->route('admin.plans.payment')->with('status', __('Règ yo sove.'));
     }
 
     private function validated(Request $request, ?Plan $plan = null): array
@@ -123,7 +175,7 @@ class PlanController extends Controller
             'is_highlighted' => ['nullable', 'boolean'],
             'is_active' => ['nullable', 'boolean'],
             'sort_order' => ['nullable', 'integer', 'min:0', 'max:999'],
-            'price_monthly' => ['nullable', 'numeric', 'min:0', 'max:99999999'],
+            'price_monthly' => ['nullable', 'integer', 'min:0', 'max:99999999'],
             'price_quarterly' => ['nullable', 'numeric', 'min:0', 'max:99999999'],
             'price_yearly' => ['nullable', 'numeric', 'min:0', 'max:99999999'],
             'max_active_tontines' => ['nullable', 'integer', 'min:1', 'max:100000'],
@@ -149,6 +201,8 @@ class PlanController extends Controller
             throw \Illuminate\Validation\ValidationException::withMessages(['max_members_per_tontine' => __('Antre yon limit oswa make "Ilimite".')]);
         }
 
+        $monthlyPrice = $v['price_monthly'] ?? null;
+
         return [
             'name' => $v['name'],
             'description' => $v['description'] ?? null,
@@ -156,9 +210,9 @@ class PlanController extends Controller
             'is_highlighted' => $request->boolean('is_highlighted'),
             'is_active' => $active,
             'sort_order' => (int) ($v['sort_order'] ?? 0),
-            'price_monthly' => $v['price_monthly'] ?? null,
-            'price_quarterly' => $v['price_quarterly'] ?? null,
-            'price_yearly' => $v['price_yearly'] ?? null,
+            'price_monthly' => $monthlyPrice,
+            'price_quarterly' => $monthlyPrice === null ? null : round((float) $monthlyPrice * 3 * 0.97),
+            'price_yearly' => $monthlyPrice === null ? null : round((float) $monthlyPrice * 12 * 0.90),
             'max_active_tontines' => $request->boolean('unlimited_tontines') ? null : (int) $v['max_active_tontines'],
             'max_members_per_tontine' => $request->boolean('unlimited_members') ? null : (int) $v['max_members_per_tontine'],
             'features' => array_values($v['features'] ?? []),

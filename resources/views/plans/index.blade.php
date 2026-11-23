@@ -4,7 +4,7 @@
         $periods = collect(['monthly' => __('Chak mwa'), 'quarterly' => __('3 mwa'), 'yearly' => __('Chak ane')])
             ->filter(fn ($l, $k) => $k === 'monthly' || $plans->contains(fn ($p) => $p->priceFor($k)));
         $needText = [
-            'tontines' => __('Ou pa ka kreye yon nouvo tontin sou plan :plan a kounye a.'),
+            'tontines' => __('Ou pa ka kreye yon nouvo sòl sou plan :plan a kounye a.'),
             'members' => __('Ou pa ka ajoute yon lòt manm sou plan :plan a kounye a.'),
         ];
     @endphp
@@ -40,7 +40,7 @@
                 @if (in_array($limit['need'], ['tontines', 'members']) && $limit['max'])
                     <div>
                         <div class="flex justify-between font-label-md text-label-md mb-1">
-                            <span>{{ $limit['need'] === 'tontines' ? __('Tontin aktif') : __('Manm sou tontin sa a') }}</span>
+                            <span>{{ $limit['need'] === 'tontines' ? __('Sòl aktif') : __('Manm sou sòl sa a') }}</span>
                             <span class="tabular-nums">{{ $limit['used'] }} / {{ $limit['max'] }}</span>
                         </div>
                         <div class="h-2.5 bg-slate-200 rounded-full overflow-hidden"><div class="h-2.5 bg-secondary rounded-full" style="width: 100%"></div></div>
@@ -65,15 +65,6 @@
             <a href="{{ route('subscription') }}" class="font-label-md text-label-md text-primary-container underline">{{ __('Wè abònman mwen') }}</a>
         </div>
 
-        @if ($periods->count() > 1)
-            <div class="flex bg-surface-container-high p-1 rounded-xl font-label-md text-label-md w-full sm:w-auto sm:inline-flex">
-                @foreach ($periods as $key => $label)
-                    <button type="button" @click="period = '{{ $key }}'" class="flex-1 px-4 py-2 rounded-lg transition"
-                            :class="period === '{{ $key }}' ? 'bg-primary-container text-on-primary' : 'text-on-surface-variant'">{{ $label }}</button>
-                @endforeach
-            </div>
-        @endif
-
         <div class="grid md:grid-cols-2 xl:grid-cols-4 gap-space-md">
             @foreach ($plans as $plan)
                 @php
@@ -82,7 +73,11 @@
                     $disc = ['quarterly' => $plan->discountPercent('quarterly'), 'yearly' => $plan->discountPercent('yearly')];
                 @endphp
                 <div class="card !p-space-lg flex flex-col gap-space-md {{ $plan->is_highlighted ? 'border-2 border-primary-container shadow-lg' : '' }}"
-                     x-data="{ p: @js($prices), d: @js($disc), labels: { monthly: @js(__('mwa')), quarterly: @js(__('3 mwa')), yearly: @js(__('ane')) } }">
+                     x-data="{ p: @js($prices), d: @js($disc), months: { monthly: 1, quarterly: 3, yearly: 12 },
+                               labels: { monthly: @js(__('mwa')), quarterly: @js(__('3 mwa')), yearly: @js(__('ane')) },
+                               billingLabels: { monthly: @js(__('Peye chak mwa')), quarterly: @js(__('Peye chak 3 mwa')), yearly: @js(__('Peye chak ane')) },
+                               currency: @js($cur) }"
+                     data-plan-pricing="{{ $plan->slug }}">
                     <div class="flex items-start justify-between gap-2">
                         <div>
                             @if ($plan->badge)<span class="badge bg-primary-container text-on-primary mb-1">{{ $plan->badge }}</span>@endif
@@ -92,23 +87,44 @@
                     </div>
                     @if ($plan->description)<p class="font-body-sm text-body-sm text-on-surface-variant -mt-2">{{ $plan->description }}</p>@endif
 
+                    @if (! $plan->is_free && $periods->count() > 1)
+                        <div class="inline-flex self-start items-center gap-0.5 rounded-full bg-surface-container-high p-1 font-label-sm text-label-sm" data-period-switch>
+                            @foreach ($periods as $key => $label)
+                                @if ($key === 'monthly' || $plan->priceFor($key))
+                                    <button type="button" @click="period = '{{ $key }}'"
+                                            class="inline-flex items-center gap-1 rounded-full px-2.5 py-1.5 transition"
+                                            :class="period === '{{ $key }}' ? 'bg-surface-container-lowest text-primary shadow-sm' : 'text-on-surface-variant hover:text-on-surface'">
+                                        {{ $label }}
+                                        @if ($key !== 'monthly')
+                                            <span class="text-[10px] font-semibold text-emerald-700" x-show="d.{{ $key }}" x-cloak x-text="d.{{ $key }} + '%'"></span>
+                                        @endif
+                                    </button>
+                                @endif
+                            @endforeach
+                        </div>
+                    @endif
+
                     <div>
                         @if ($plan->is_free)
                             <p class="font-currency-display text-currency-display tabular-nums">0 <span class="font-title-md text-title-md text-on-surface-variant">{{ $cur }}</span></p>
                         @else
-                            <p class="flex items-baseline gap-1 tabular-nums">
-                                <span class="font-currency-display text-currency-display" x-text="Number(p[period] ?? p.monthly).toLocaleString('en-US')"></span>
-                                <span class="font-title-md text-title-md text-on-surface-variant">{{ $cur }} / <span x-text="p[period] ? labels[period] : labels.monthly"></span></span>
+                            <p class="flex flex-wrap items-baseline gap-x-1.5 tabular-nums">
+                                <span class="font-currency-display text-currency-display" data-monthly-equivalent
+                                      x-text="Number((p[period] ?? p.monthly) / months[period]).toLocaleString('en-US', { maximumFractionDigits: 2 })">{{ number_format((float) $plan->priceFor('monthly'), 0, '.', ',') }}</span>
+                                <span class="font-title-md text-title-md text-on-surface-variant">{{ $cur }} / {{ __('mwa') }}</span>
                             </p>
-                            <span x-show="period !== 'monthly' && p[period] && d[period]" x-cloak class="badge-paid mt-1">{{ __('Ekonomize') }} <span x-text="d[period] + '%'"></span></span>
+                            <p class="font-body-sm text-body-sm text-on-surface-variant mt-1" data-billing-summary
+                               x-text="Number(p[period] ?? p.monthly).toLocaleString('en-US', { maximumFractionDigits: 2 }) + ' ' + currency + ' · ' + billingLabels[period]">
+                                {{ number_format((float) $plan->priceFor('monthly'), 0, '.', ',') }} {{ $cur }} · {{ __('Peye chak mwa') }}
+                            </p>
                         @endif
                     </div>
 
                     <ul class="space-y-2 font-body-md text-body-md">
                         <li class="flex items-center gap-2"><span class="material-symbols-outlined text-[20px] text-emerald-500" style="font-variation-settings:'FILL' 1">check_circle</span>
-                            {{ $plan->max_active_tontines ? $plan->max_active_tontines . ' ' . __('tontin aktif') : __('Tontin ilimite') }}</li>
+                            {{ $plan->max_active_tontines ? $plan->max_active_tontines . ' ' . __('sòl aktif') : __('Sòl ilimite') }}</li>
                         <li class="flex items-center gap-2"><span class="material-symbols-outlined text-[20px] text-emerald-500" style="font-variation-settings:'FILL' 1">check_circle</span>
-                            {{ __('Jiska') }} {{ $plan->max_members_per_tontine ?? '∞' }} {{ __('manm pa tontin') }}</li>
+                            {{ __('Jiska') }} {{ $plan->max_members_per_tontine ?? '∞' }} {{ __('manm pa sòl') }}</li>
                         <li class="flex items-center gap-2"><span class="material-symbols-outlined text-[20px] text-emerald-500" style="font-variation-settings:'FILL' 1">check_circle</span>{{ __('Rapò enprimab (PDF)') }}</li>
                         @foreach (\App\Support\Features::ALL as $key => [$label])
                             @if ($plan->allows($key))
@@ -137,7 +153,7 @@
         <details class="card">
             <summary class="font-title-md text-title-md cursor-pointer">{{ __('Kisa k pase si abònman mwen fini?') }}</summary>
             <p class="mt-2 text-on-surface-variant">
-                {{ __('Ou gen :days jou pou renouvle san pèdi anyen. Apre sa, ou tounen sou plan gratis la : tontin ak done ou yo rete la, men sa ki depase limit gratis la pase an lekti sèlman jiskaske ou renouvle.', ['days' => $ent->graceDays]) }}
+                {{ __('Ou gen :days jou pou renouvle san pèdi anyen. Apre sa, ou tounen sou plan gratis la : sòl ak done ou yo rete la, men sa ki depase limit gratis la pase an lekti sèlman jiskaske ou renouvle.', ['days' => $ent->graceDays]) }}
             </p>
         </details>
     </div>

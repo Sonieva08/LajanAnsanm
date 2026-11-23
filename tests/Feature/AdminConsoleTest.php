@@ -3,10 +3,13 @@
 namespace Tests\Feature;
 
 use App\Models\ActivityLog;
+use App\Models\Announcement;
+use App\Models\Review;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
 use Tests\Concerns\BuildsTontines;
 use Tests\TestCase;
 
@@ -30,15 +33,27 @@ class AdminConsoleTest extends TestCase
 
     private function urlFor($route, User $target): string
     {
+        Storage::fake('local');
+        Storage::disk('local')->put('subscription-receipts/admin-test.png', 'test receipt');
+
         $params = [
             'user' => $target,
             'plan' => \App\Models\Plan::where('slug', 'pro')->firstOrFail(),
             'subscriptionRequest' => \App\Models\SubscriptionRequest::firstOrCreate(
                 ['reference_code' => 'LA-TEST-001'],
                 ['user_id' => $target->id, 'plan_id' => \App\Models\Plan::where('slug', 'pro')->value('id'), 'billing_period' => 'monthly',
-                 'amount' => 100, 'payment_method' => 'moncash', 'payer_phone' => '+50911111111', 'transaction_ref' => 'T1']
+                 'amount' => 100, 'payment_method' => 'moncash', 'payer_phone' => '+50911111111', 'transaction_ref' => 'T1',
+                 'recipient_account' => '+509 3712-8899',
+                 'receipt_path' => 'subscription-receipts/admin-test.png']
+            ),
+            'announcement' => Announcement::firstOrCreate(
+                ['title' => 'Test announcement'],
+                ['message' => 'Test message', 'type' => 'info', 'audience' => 'all', 'is_active' => true]
             ),
         ];
+        $review = Review::firstOrNew(['user_id' => $target->id]);
+        $review->forceFill(['user_id' => $target->id, 'rating' => 5, 'comment' => 'Test review', 'status' => 'pending'])->save();
+        $params['review'] = $review;
 
         return route($route->getName(), array_intersect_key($params, array_flip($route->parameterNames())));
     }

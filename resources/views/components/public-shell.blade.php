@@ -8,7 +8,9 @@
     <meta name="robots" content="noindex, nofollow">
     @if ($refresh)<meta http-equiv="refresh" content="{{ $refresh }}">@endif
     <title>{{ $title }} · LajanAnsanm</title>
-    <link rel="icon" type="image/svg+xml" href="{{ asset('images/logo.svg') }}">
+    <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="any">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('images/favicon-32.png') }}">
+    <link rel="apple-touch-icon" href="{{ asset('images/apple-touch-icon.png') }}">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
     @vite(['resources/css/app.css'])
@@ -20,7 +22,7 @@
 <body class="bg-surface text-on-surface font-body-md antialiased min-h-screen flex items-center justify-center px-margin py-space-lg">
     <main class="w-full max-w-[420px] sm:max-w-xl flex flex-col items-center gap-space-md">
         <div class="inline-flex items-center gap-space-sm bg-surface-container-lowest px-space-md py-1.5 rounded-full shadow-sm">
-            <img src="{{ asset('images/logo.svg') }}" alt="LajanAnsanm" class="w-7 h-7 object-contain">
+            <img src="{{ asset('images/logo-icon-sm.png') }}" alt="LajanAnsanm" class="w-7 h-7 object-contain">
             <span class="font-title-md text-title-md tracking-tight text-primary">LajanAnsanm</span>
             @if ($status)
                 <span class="w-1.5 h-1.5 rounded-full bg-outline-variant"></span>
@@ -36,5 +38,6 @@
 
         {{ $slot }}
     </main>
+    @include('partials.help-widget', ['audience' => 'guest'])
 </body>
 </html>

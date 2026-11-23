@@ -18,6 +18,15 @@
             ]);
             return 'https://wa.me/' . $d . '?text=' . rawurlencode($msg);
         };
+        $unpaidMembers = $members->filter(fn ($m) => ! $contributions->has($m->id));
+        $allRemindersText = $unpaidMembers->map(function ($m) use ($tontine, $cycle) {
+            $msg = __('Bonjou :name, rapèl: kotizasyon :amount :cur pou :tontine (tou :n) dwe peye anvan :date.', [
+                'name' => $m->name, 'amount' => number_format($tontine->amount_per_period, 0, '.', ','),
+                'cur' => config('lajanansanm.currency'), 'tontine' => $tontine->name,
+                'n' => $cycle->cycle_number, 'date' => $cycle->deadline->format('d/m/Y'),
+            ]);
+            return "{$m->name} ({$m->phone}):\n{$msg}";
+        })->implode("\n\n---\n\n");
     @endphp
 
     <x-page-header :back="route('tontines.show', $tontine)" :title="__('Peman yo')" :subtitle="$tontine->name" />
@@ -64,7 +73,20 @@
             @endif
         </div>
 
-        <h2 class="font-title-lg text-title-lg pt-space-xs">{{ __('Estati manm yo pou tou sa a') }}</h2>
+        <div class="flex items-center justify-between pt-space-xs gap-2">
+            <h2 class="font-title-lg text-title-lg">{{ __('Estati manm yo pou tou sa a') }}</h2>
+            @if ($isOpen && $canRemind && $unpaidMembers->isNotEmpty())
+                <div x-data="{ copied: false }">
+                    <button type="button"
+                            @click="navigator.clipboard.writeText(@js($allRemindersText)).then(() => { copied = true; setTimeout(() => copied = false, 2500); })"
+                            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-100 text-emerald-800 font-label-md text-label-md font-semibold hover:bg-emerald-200 transition shadow-sm active:scale-95"
+                            title="{{ __('Kopye tout tèks rapèl pou tout manm ki poko peye yo') }}">
+                        <span class="material-symbols-outlined text-[16px]">content_copy</span>
+                        <span x-text="copied ? @js(__('Kopye!')) : @js(__('Kopye tout rapèl yo'))"></span>
+                    </button>
+                </div>
+            @endif
+        </div>
 
         <div class="space-y-space-sm">
             @foreach ($members as $member)
@@ -115,7 +137,12 @@
                                         <label class="cursor-pointer">
                                             <input type="radio" name="payment_method" value="{{ $mm }}" class="peer sr-only" x-model="m" required>
                                             <span class="flex items-center gap-2 p-space-sm rounded-xl border-[1.5px] border-slate-200 bg-white font-label-md text-label-md peer-checked:border-primary-container peer-checked:bg-primary-fixed/60 transition">
-                                                <span class="material-symbols-outlined text-primary-container">{{ $icons[$mm] }}</span>{{ $labels[$mm] }}
+                                                @if ($mm === 'moncash' || $mm === 'natcash')
+                                                    <x-payment-method-logo :method="$mm" size="h-7 w-7" />
+                                                @else
+                                                    <span class="material-symbols-outlined text-primary-container">{{ $icons[$mm] }}</span>
+                                                @endif
+                                                {{ $labels[$mm] }}
                                             </span>
                                         </label>
                                     @endforeach

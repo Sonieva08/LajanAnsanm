@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Cycle;
+use App\Models\Invitation;
 use App\Models\Tontine;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -55,27 +56,37 @@ class CycleController extends Controller
     {
         $this->authorize('update', $tontine);
 
-        if ($tontine->isLocked()) {
-            return back()->withErrors(['cycles' => __('Tour yo deja jenere.')]);
-        }
+        $result = DB::transaction(function () use ($tontine) {
+            $lockedTontine = Tontine::query()->whereKey($tontine->id)->lockForUpdate()->firstOrFail();
 
-        $members = $tontine->members()->where('is_active', true)->get();
+            if ($lockedTontine->isLocked()) {
+                return 'locked';
+            }
 
-        if ($members->count() < 2) {
-            return back()->withErrors(['cycles' => __('Ou bezwen omwen 2 manm pou kòmanse tontine a.')]);
-        }
+            if ($lockedTontine->members()->whereNotNull('invited_at')->whereNull('invitation_accepted_at')->exists()) {
+                return 'pending-invitations';
+            }
 
-        DB::transaction(function () use ($tontine, $members) {
+            if (Invitation::query()->where('tontine_id', $lockedTontine->id)
+                ->whereNull('accepted_at')->whereNull('revoked_at')->where('expires_at', '>', now())->exists()) {
+                return 'pending-invitations';
+            }
+
+            $members = $lockedTontine->members()->where('is_active', true)->get();
+            if ($members->count() < 2) {
+                return 'too-few-members';
+            }
+
             foreach ($members->values() as $i => $member) {
-                $deadline = $tontine->start_date->copy()->startOfDay();
+                $deadline = $lockedTontine->start_date->copy()->startOfDay();
 
-                $deadline = $tontine->period_type === 'weekly'
+                $deadline = $lockedTontine->period_type === 'weekly'
                     ? $deadline->addWeeks($i)
                     : $deadline->addMonthsNoOverflow($i);
 
                 Cycle::create([
-                    'tontine_id' => $tontine->id,
-                    'round' => $tontine->current_round,
+                    'tontine_id' => $lockedTontine->id,
+                    'round' => $lockedTontine->current_round,
                     'cycle_number' => $i + 1,
                     'beneficiary_member_id' => $member->id,
                     'deadline' => $deadline,
@@ -83,12 +94,24 @@ class CycleController extends Controller
                 ]);
             }
 
-            $tontine->update(['status' => 'active']);
+            $lockedTontine->update(['status' => 'active']);
+
+            return 'started';
         });
+
+        if ($result !== 'started') {
+            $error = match ($result) {
+                'locked' => __('Tour yo deja jenere.'),
+                'pending-invitations' => __('Tann moun yo aksepte envitasyon yo oswa anile envitasyon ki poko aksepte yo anvan ou kòmanse.'),
+                default => __('Ou bezwen omwen 2 manm pou kòmanse sòl la.'),
+            };
+
+            return back()->withErrors(['cycles' => $error]);
+        }
 
         return redirect()
             ->route('tontines.cycles.index', $tontine)
-            ->with('status', __('Tour yo jenere. Tontine a kòmanse!'));
+            ->with('status', __('Tour yo jenere. Sòl la kòmanse!'));
     }
 
     public function reset(Tontine $tontine): RedirectResponse
@@ -147,7 +170,7 @@ class CycleController extends Controller
         });
 
         if (! $done) {
-            return back()->withErrors(['cycles' => __('Tontine a poko fini. Ou pa ka relanse li.')]);
+            return back()->withErrors(['cycles' => __('Sòl la poko fini. Ou pa ka relanse li.')]);
         }
 
         return redirect()

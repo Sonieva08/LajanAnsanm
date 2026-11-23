@@ -36,7 +36,7 @@
             <div class="overflow-x-auto">
                 <table class="w-full text-left">
                     <thead class="bg-surface-container-low font-label-sm text-label-sm uppercase text-on-surface-variant">
-                        <tr><th class="p-3">{{ __('Òganizatè') }}</th><th class="p-3 text-right">{{ __('Tontin') }}</th><th class="p-3 text-right">{{ __('Manm') }}</th><th class="p-3 text-right">{{ __('Volim total') }}</th><th class="p-3">{{ __('Dènye vizit') }}</th><th class="p-3">{{ __('Estati') }}</th></tr>
+                        <tr><th class="p-3">{{ __('Òganizatè') }}</th><th class="p-3 text-right">{{ __('Sòl') }}</th><th class="p-3 text-right">{{ __('Manm') }}</th><th class="p-3 text-right">{{ __('Volim total') }}</th><th class="p-3">{{ __('Dènye vizit') }}</th><th class="p-3">{{ __('Estati') }}</th></tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
                         @forelse ($users as $u)
@@ -84,7 +84,7 @@
                     <dt class="text-on-surface-variant">{{ __('Imèl verifye') }}</dt><dd class="text-right">{{ $su->email_verified_at ? __('Wi') : __('Non') }}</dd>
                 </dl>
                 <div class="grid grid-cols-3 gap-2 text-center">
-                    <div class="bg-surface-container-low rounded-xl p-2"><p class="font-title-lg text-title-lg tabular-nums">{{ $selected['tontines_total'] }}</p><p class="font-label-sm text-label-sm text-on-surface-variant">{{ __('Tontin') }}</p></div>
+                    <div class="bg-surface-container-low rounded-xl p-2"><p class="font-title-lg text-title-lg tabular-nums">{{ $selected['tontines_total'] }}</p><p class="font-label-sm text-label-sm text-on-surface-variant">{{ __('Sòl') }}</p></div>
                     <div class="bg-surface-container-low rounded-xl p-2"><p class="font-title-lg text-title-lg tabular-nums">{{ $selected['tontines_active'] }}</p><p class="font-label-sm text-label-sm text-on-surface-variant">{{ __('Aktif') }}</p></div>
                     <div class="bg-surface-container-low rounded-xl p-2"><p class="font-title-lg text-title-lg tabular-nums">{{ $selected['members'] }}</p><p class="font-label-sm text-label-sm text-on-surface-variant">{{ __('Manm') }}</p></div>
                 </div>

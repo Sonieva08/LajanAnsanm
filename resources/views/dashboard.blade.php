@@ -29,7 +29,7 @@
 
             <div class="relative z-10 space-y-space-md">
                 <div>
-                    <span class="font-label-md text-label-md text-primary-fixed uppercase tracking-wider block">{{ __('Total ranmase nan tout tontin') }}</span>
+                    <span class="font-label-md text-label-md text-primary-fixed uppercase tracking-wider block">{{ __('Total ranmase nan tout sòl') }}</span>
                     <div class="flex items-baseline gap-1.5 mt-1 tabular-nums">
                         <span class="font-currency-display text-currency-display">{{ number_format($stats['collected'], 0, '.', ',') }}</span>
                         <span class="font-title-lg text-title-lg text-tertiary-fixed">{{ $cur }}</span>
@@ -38,7 +38,7 @@
 
                 <div class="grid grid-cols-3 gap-space-xs">
                     <div class="flex flex-col items-center p-2 rounded-lg bg-white/10">
-                        <span class="font-label-sm text-label-sm text-primary-fixed">{{ __('Tontin aktif') }}</span>
+                        <span class="font-label-sm text-label-sm text-primary-fixed">{{ __('Sòl aktif') }}</span>
                         <span class="font-title-lg text-title-lg mt-0.5">{{ $stats['active_tontines'] }}</span>
                     </div>
                     <div class="flex flex-col items-center p-2 rounded-lg bg-white/10">
@@ -63,7 +63,7 @@
                 <a href="{{ route('tontines.create') }}"
                    class="flex flex-col items-center justify-center rounded-xl bg-primary-container text-on-primary shadow-md active:scale-95 transition h-[88px]">
                     <span class="material-symbols-outlined text-[24px] mb-1">add_circle</span>
-                    <span class="font-label-sm text-label-sm">{{ __('Nouvo tontin') }}</span>
+                    <span class="font-label-sm text-label-sm">{{ __('Nouvo sòl') }}</span>
                 </a>
 
                 <a href="{{ $firstActive ? route('tontines.contributions.index', $firstActive) : route('tontines.index') }}"
@@ -111,7 +111,7 @@
 
         {{-- Liste des tontines --}}
         <div class="flex items-center gap-1.5 pt-space-xs">
-            <h2 class="font-headline-md text-headline-md">{{ __('Tontin mwen yo') }}</h2>
+            <h2 class="font-headline-md text-headline-md">{{ __('sòl mwen yo') }}</h2>
             <span class="flex items-center justify-center w-6 h-6 rounded-full bg-surface-container-highest text-primary font-label-sm text-label-sm">{{ $tontines->count() }}</span>
         </div>
 
@@ -207,8 +207,8 @@
                     @endif
                 </div>
             @empty
-                <x-empty-state art="tontine" :title="__('Ou pa gen tontin ankò')" :text="__('Kòmanse premye tontin kominotè w la kounye a pou w jere kotizasyon ak tiraj manm yo an sekirite.')"
-                    :href="route('tontines.create')" :action="__('Kreye premye tontin ou')" />
+                <x-empty-state art="tontine" :title="__('Ou pa gen sòl ankò')" :text="__('Kòmanse premye sòl kominotè w la kounye a pou w jere kotizasyon ak tiraj manm yo an sekirite.')"
+                    :href="route('tontines.create')" :action="__('Kreye premye sòl ou')" />
             @endforelse
         </div>
     </div>
@@ -217,6 +217,6 @@
     <a href="{{ route('tontines.create') }}"
        class="fixed right-gutter z-30 inline-flex items-center gap-2 px-6 min-h-[52px] rounded-full bg-secondary text-on-secondary shadow-xl font-label-lg text-label-lg active:scale-95 transition"
        style="bottom: calc(5rem + env(safe-area-inset-bottom, 0px))">
-        <span class="material-symbols-outlined">add</span> {{ __('Kreye yon tontine') }}
+        <span class="material-symbols-outlined">add</span> {{ __('Kreye yon sòl') }}
     </a>
 </x-app-layout>

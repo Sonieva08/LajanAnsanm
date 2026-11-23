@@ -24,7 +24,7 @@ class CheckMaintenance
         }
 
         // Le propriétaire passe toujours ; la connexion reste ouverte pour qu'il puisse se connecter
-        if ($request->user()?->is_owner || $request->is('login') || $request->routeIs('login', 'logout', 'lang.switch')) {
+        if ($request->user()?->is_owner || $request->is('login') || $request->routeIs('login', 'logout', 'lang.switch', 'webhooks.*')) {
             return $next($request);
         }
 

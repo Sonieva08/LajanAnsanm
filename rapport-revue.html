@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Rapport de revue — LajanAnsanm</title>
+<style>
+  @page { size: A4; margin: 18mm 15mm; }
+  * { box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Calibri, Arial, sans-serif; color: #1a1a2e; font-size: 10.5pt; line-height: 1.5; margin: 0; }
+  header { border-bottom: 4px solid #0f3460; padding-bottom: 12px; margin-bottom: 24px; }
+  h1 { font-size: 22pt; color: #0f3460; margin: 0 0 4px; }
+  .subtitle { color: #555; font-size: 11pt; }
+  h2 { font-size: 14pt; color: #0f3460; border-bottom: 2px solid #e94560; padding-bottom: 4px; margin-top: 28px; }
+  table { border-collapse: collapse; width: 100%; margin: 10px 0 16px; font-size: 9.5pt; }
+  th { background: #0f3460; color: #fff; text-align: left; padding: 6px 8px; }
+  td { border: 1px solid #ccd; padding: 5px 8px; vertical-align: top; }
+  tr:nth-child(even) td { background: #f4f6fb; }
+  .badge { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 8.5pt; font-weight: 600; color: #fff; }
+  .ok { background: #2e8b57; }
+  .note { background: #f0f4ff; border-left: 4px solid #0f3460; padding: 10px 14px; margin: 12px 0; font-size: 9.5pt; }
+  code { background: #eef; padding: 1px 5px; border-radius: 3px; font-size: 9pt; }
+  ul { margin: 6px 0; padding-left: 22px; }
+  li { margin-bottom: 4px; }
+  .footer { margin-top: 30px; padding-top: 8px; border-top: 1px solid #ccd; color: #777; font-size: 8.5pt; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Rapport de revue et d'améliorations</h1>
+  <div class="subtitle">Projet <strong>LajanAnsanm</strong> — application Laravel 12 de gestion de tontines<br>
+  Date : 17 octobre 2026 · Branche : <code>main</code></div>
+</header>
+
+<h2>1. Résumé exécutif</h2>
+<p>Une revue complète du code a été menée (architecture, sécurité, tests, CI, qualité du code). Ce rapport recense les points forts constatés, les défauts identifiés, <strong>les corrections qui ont été appliquées</strong> et les suggestions d'évolution restantes. L'ensemble de la suite de tests a été exécuté après modifications pour valider chaque changement.</p>
+
+<h2>2. Points positifs</h2>
+<table>
+  <tr><th style="width:25%">Domaine</th><th>Observation</th></tr>
+  <tr><td><strong>Sécurité serveur</strong></td><td><code>EnforceSubscription</code> applique les limites de plan côté serveur (« cacher un bouton ne suffit jamais »). Aucun gating uniquement client.</td></tr>
+  <tr><td><strong>Autorisation</strong></td><td><code>TontinePolicy</code> + <code>$this-&gt;authorize()</code> dans tous les contrôleurs, et <code>AuthorizationMatrixTest</code> vérifie automatiquement toutes les routes <code>tontines.*</code>.</td></tr>
+  <tr><td><strong>Conception métier</strong></td><td>Séparation voulue et documentée : <code>payment_declarations</code> ≠ <code>contributions</code> (une déclaration non validée n'ent jamais les totaux) ; <code>subscription_payments</code> ≠ <code>subscription_requests</code> ; snapshots de plan figés.</td></tr>
+  <tr><td><strong>Paiements</strong></td><td>Webhook MonCashConnect sans CSRF mais vérifié par signature HMAC, testé (rejeu, altération, schémas invalides, décalage de prix…).</td></tr>
+  <tr><td><strong>Tests</strong></td><td>~25 classes de tests fonctionnels, helper <code>BuildsTontines</code>, aucune annotation TODO/FIXME dans le code.</td></tr>
+  <tr><td><strong>Bilinguisme</strong></td><td><code>lang/ht.json</code> + <code>fr.json</code>, middleware <code>SetLocale</code>, messages traduits jusque dans les contrôleurs.</td></tr>
+</table>
+
+<h2>3. Défauts identifiés</h2>
+<table>
+  <tr><th style="width:5%">#</th><th style="width:30%">Défaut</th><th>Impact</th></tr>
+  <tr><td>D1</td><td>7 tests en double (racine de <code>tests/</code> et <code>tests/Feature/</code>) + vieux <code>BuildsTontines.php</code></td><td>Classes PHP en double (collision si autoload), confusion, duplication de maintenance. Non détectés par PHPUnit (seuls <code>tests/Unit</code> et <code>tests/Feature</code> sont scannés) mais dangereux.</td></tr>
+  <tr><td>D2</td><td><code>routes/web.php</code> désorganisé</td><td><code>use</code> éparpillés en milieu de fichier, <strong>route <code>/dashboard</code> définie deux fois</strong> (closure morte + contrôleur), groupes mélangés.</td></tr>
+  <tr><td>D3</td><td>Aucune intégration continue</td><td>Les tests existants ne sont exécutés automatiquement nulle part : risque de régression non détecté.</td></tr>
+<h2>4. Corrections appliquées</h2>
+<table>
+  <tr><th style="width:5%">#</th><th style="width:26%">Correction</th><th>Détail</th><th style="width:12%">Statut</th></tr>
+  <tr><td>C1</td><td>Suppression des doublons de tests</td><td>8 fichiers supprimés : <code>tests/ContributionTest.php</code>, <code>CycleTest</code>, <code>MemberTest</code>, <code>PayoutTest</code>, <code>ReportTest</code>, <code>RestartTest</code>, <code>TontineCrudTest</code>, <code>BuildsTontines.php</code> (vétuste). Les copies canoniques de <code>tests/Feature/</code> et <code>tests/Concerns/</code> sont conservées.</td><td><span class="badge ok">Fait</span></td></tr>
+  <tr><td>C2</td><td>Nettoyage de <code>routes/web.php</code></td><td>Tous les <code>use</code> regroupés en tête de fichier ; route <code>/dashboard</code> en double supprimée (le contrôleur <code>DashboardController</code> fait foi) ; routes regroupées par domaine avec en-têtes de section (public, profil, tontines, membres/rapports, cycles, cotisations, portail, webhook). Tous les noms de routes et middlewares inchangés.</td><td><span class="badge ok">Fait</span></td></tr>
+  <tr><td>C3</td><td>Intégration continue GitHub Actions</td><td>Nouveau <code>.github/workflows/ci.yml</code> : PHP 8.3, Composer avec cache, <code>pint --test</code>, <code>php artisan test</code>, puis <code>npm ci</code> + <code>npm run build</code>. Déclenché à chaque push sur <code>main</code> et chaque pull request.</td><td><span class="badge ok">Fait</span></td></tr>
+  <tr><td>C4</td><td>Rate limiting du portail membre</td><td>Remplacement de <code>throttle:30,1</code> par un limiteur nommé <code>portal.token</code> (déclaré dans <code>AppServiceProvider</code>) : <strong>10 req/min par jeton</strong> (anti-force brute sur <code>/m/{token}</code>) <strong>+ 30 req/min par IP</strong>.</td><td><span class="badge ok">Fait</span></td></tr>
+  <tr><td>C5</td><td>Identité du paquet</td><td><code>composer.json</code> : <code>sonieva08/lajanansanm</code> et description réelle du projet.</td><td><span class="badge ok">Fait</span></td></tr>
+  <tr><td>C6</td><td>Section « Architecture » du README</td><td>Tableau des 3 rôles (organisateur / membre / propriétaire), carte du code par fichier, et les 3 décisions de conception clés (déclarations séparées, paiements d'abonnement séparés, snapshots de plan).</td><td><span class="badge ok">Fait</span></td></tr>
+</table>
+
+<h2>5. Validation après modifications</h2>
+<div class="note">
+  <strong>Résultats des tests</strong> — suite complète exécutée après toutes les modifications. Aucune régression : l'application démarre (<code>php artisan route:list</code> fonctionne), et les tests du portail membre, des paiements en ligne, de la maintenance et de l'administration passent avec le nouveau throttle et les routes réorganisées. Détail dans la section 7.
+</div>
+
+<h2>6. Suggestions restantes (non appliquées, à discuter)</h2>
+<ul>
+  <li><strong>Gating d'abonnement plus robuste</strong> : remplacer le dispatch par noms de routes dans <code>EnforceSubscription</code> (strings fragiles) par des <code>Gate</code> ou des métadonnées de route. Refactor comportemental, à faire avec une revue et un jeu de tests dédiés.</li>
+  <li><strong>Extraire la génération CSV</strong> de <code>ReportController</code> (~190 lignes, CSV écrit à la main) dans une classe <code>App\Support\CsvExporter</code> testée unitairement.</li>
+  <li><strong>Audit de couverture de <code>ActivityLogger</code></strong> : vérifier que validations/refus de déclarations et versements sont bien journalisés.</li>
+  <li><strong>Migration SQLite → MySQL</strong> documentée pour la production, avec plan de sauvegarde.</li>
+</ul>
+
+<h2>7. Détail de l'exécution des tests</h2>
+<p>Suite complète exécutée avec <code>php artisan test</code> (sortie intégrale dans <code>test-run2.txt</code> à la racine du projet) :</p>
+<div class="note" id="resultats-tests">
+  <p style="margin-top:0"><strong>Résultat complet de la suite :</strong></p>
+  <pre style="margin:0;white-space:pre-wrap">Tests:    302 passed (2040 assertions)
+Duration: 43.60s</pre>
+  <p style="margin-bottom:0">Toutes les classes de tests sont au vert, y compris <code>MemberPortalTest</code> (avec le nouveau throttle <code>portal.token</code>), <code>AuthorizationMatrixTest</code>, <code>AdminConsoleTest</code>, <code>OnlinePaymentTest</code>, <code>MaintenanceTest</code>, <code>PlanLimitsTest</code> et <code>SecurityHeadersAndSessionTest</code>. <strong>Aucune régression</strong> n'a été introduite par les corrections C1 à C6.</p>
+</div>
+
+<div class="footer">Généré le 17/10/2026 — LajanAnsanm · Rapport de revue de code</div>
+
+</body>
+</html>
+  <tr><td>D4</td><td>Throttle du portail membre limité à l'IP</td><td><code>throttle:30,1</code> ne protège pas contre le ciblage d'un jeton précis (<code>/m/{token}</code>).</td></tr>
+  <tr><td>D5</td><td><code>composer.json</code> encore au nom du squelette</td><td><code>laravel/laravel</code> / « skeleton application » : identité du projet non renseignée.</td></tr>
+  <tr><td>D6</td><td>README sans vue d'ensemble de l'architecture</td><td>Difficulté d'onboarding d'un nouveau contributeur.</td></tr>
+</table>

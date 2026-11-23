@@ -48,7 +48,7 @@
             </div>
         </div>
 
-        <button type="button" onclick="location.assign(location.href)" class="btn-primary w-full mt-space-md">
+        <button type="button" x-on:click="location.assign(location.href)" class="btn-primary w-full mt-space-md">
             <span class="material-symbols-outlined">autorenew</span> {{ __('Rechaje paj la') }}
         </button>
 
@@ -73,7 +73,7 @@
         </div>
     @endif
 
-    <script>
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}">
         (function () {
             var total = 60, left = total;
             var label = document.getElementById('mt-label'), bar = document.getElementById('mt-bar');

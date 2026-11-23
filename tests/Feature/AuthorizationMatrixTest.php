@@ -3,9 +3,12 @@
 namespace Tests\Feature;
 
 use App\Models\Contribution;
+use App\Models\PaymentDeclaration;
+use App\Models\Payout;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
 use Tests\Concerns\BuildsTontines;
 use Tests\TestCase;
 
@@ -15,6 +18,9 @@ class AuthorizationMatrixTest extends TestCase
 
     private function fixture(): array
     {
+        Storage::fake('local');
+        Storage::disk('local')->put('receipts/matrix.png', 'fake-image-content');
+
         $t = $this->start($this->makeTontine());
         $cycle = $this->openCycle($t);
         $member = $t->members()->first();
@@ -23,8 +29,25 @@ class AuthorizationMatrixTest extends TestCase
             'amount' => 500, 'paid_at' => today(), 'payment_method' => 'cash',
         ]);
 
+        $declaration = PaymentDeclaration::create([
+            'cycle_id' => $cycle->id, 'member_id' => $t->members()->skip(1)->first()->id, 'amount' => 500,
+            'payment_method' => 'moncash', 'payer_phone' => '+509 3700 0002', 'transaction_ref' => 'MC-MATRIX', 'status' => 'pending',
+            'receipt_path' => 'receipts/matrix.png',
+        ]);
+
+        Payout::create([
+            'cycle_id' => $cycle->id,
+            'member_id' => $cycle->beneficiary_member_id,
+            'amount' => 500,
+            'fee_percent' => 0,
+            'fee_amount' => 0,
+            'paid_at' => today(),
+            'confirmed' => true,
+            'receipt_path' => 'receipts/matrix.png',
+        ]);
+
         return [$t, ['tontine' => $t, 'member' => $member, 'cycle' => $cycle,
-            'contribution' => $contribution, 'round' => 1, 'direction' => 'up']];
+            'contribution' => $contribution, 'declaration' => $declaration, 'round' => 1, 'direction' => 'up']];
     }
 
     // Toutes les routes liées à une tontine précise (hors liste, création, stockage)

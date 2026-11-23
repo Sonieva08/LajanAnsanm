@@ -1,13 +1,17 @@
 @props(['active' => 'overview', 'title' => ''])
 @php
     $pendingRequests = \App\Models\SubscriptionRequest::where('status', 'pending')->count();
+    $pendingReviews = \Illuminate\Support\Facades\Schema::hasTable('reviews') ? \App\Models\Review::where('status', 'pending')->count() : 0;
     $nav = [
         ['overview', 'dashboard', __('Vi jeneral'), 'admin.overview', null],
         ['users', 'group', __('Itilizatè'), 'admin.users', null],
         ['plans', 'sell', __('Plan ak abònman'), 'admin.plans', null],
+        ['subscriptions', 'card_membership', __('Abònman'), 'admin.subscriptions', null],
         ['requests', 'payments', __('Demann peman'), 'admin.requests', null],
         ['activity', 'history', __('Jounal aktivite'), 'admin.activity', null],
-        ['announcements', 'campaign', __('Anons'), null, null],
+        ['announcements', 'campaign', __('Anons'), 'admin.announcements', null],
+        ['reviews', 'star', __('Avi'), 'admin.reviews', null],
+        ['help', 'forum', __('Kesyon èd'), 'admin.help', null],
         ['settings', 'settings', __('Paramèt'), 'admin.settings', null],
     ];
 @endphp
@@ -18,7 +22,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex, nofollow">
     <title>{{ $title ?: __('Konsòl pwopriyetè') }} · LajanAnsanm</title>
-    <link rel="icon" type="image/svg+xml" href="{{ asset('images/logo.svg') }}">
+    <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="any">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('images/favicon-32.png') }}">
+    <link rel="apple-touch-icon" href="{{ asset('images/apple-touch-icon.png') }}">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -30,7 +36,7 @@
     <aside class="hidden lg:flex w-64 shrink-0 flex-col justify-between bg-surface-container-lowest border-r border-slate-200 p-space-md sticky top-0 h-screen">
         <div class="space-y-space-md">
             <a href="{{ route('admin.overview') }}" class="flex items-center gap-2 pb-space-sm border-b border-slate-100">
-                <img src="{{ asset('images/logo.svg') }}" alt="" class="h-10 w-10">
+                <img src="{{ asset('images/logo-icon-sm.png') }}" alt="" class="h-10 w-10">
                 <div class="leading-tight">
                     <p class="font-title-md text-title-md text-primary-container">LajanAnsanm</p>
                     <p class="font-label-sm text-label-sm uppercase text-on-surface-variant">{{ __('Konsòl pwopriyetè') }}</p>
@@ -43,6 +49,7 @@
                            {{ $active === $key ? 'bg-primary-container text-on-primary' : 'text-on-surface-variant hover:bg-surface-container' }}">
                             <span class="material-symbols-outlined text-[20px]">{{ $icon }}</span>{{ $label }}
                             @if ($key === 'requests' && $pendingRequests > 0)<span class="ml-auto bg-secondary text-on-secondary rounded-full text-[11px] px-2 py-0.5 font-bold">{{ $pendingRequests }}</span>@endif
+                            @if ($key === 'reviews' && $pendingReviews > 0)<span class="ml-auto bg-secondary text-on-secondary rounded-full text-[11px] px-2 py-0.5 font-bold">{{ $pendingReviews }}</span>@endif
                         </a>
                     @else
                         <div class="flex items-center gap-3 px-3 py-2.5 rounded-xl font-label-lg text-label-lg text-slate-400 cursor-not-allowed" title="{{ __('Byento') }}">
@@ -62,7 +69,7 @@
         <header class="sticky top-0 z-20 bg-surface/90 backdrop-blur border-b border-slate-200">
             <div class="flex items-center justify-between gap-3 px-gutter lg:px-space-lg h-14">
                 <a href="{{ route('admin.overview') }}" class="lg:hidden flex items-center gap-2">
-                    <img src="{{ asset('images/logo.svg') }}" alt="" class="h-8 w-8">
+                    <img src="{{ asset('images/logo-icon-sm.png') }}" alt="" class="h-8 w-8">
                     <span class="font-title-md text-title-md text-primary-container">LajanAnsanm</span>
                 </a>
                 <span class="badge bg-primary-fixed text-primary-container"><span class="material-symbols-outlined text-[14px]">shield_person</span> {{ __('Mòd pwopriyetè') }}</span>
@@ -81,6 +88,9 @@
                         <a href="{{ route($route) }}" class="shrink-0 px-3 py-1.5 rounded-full font-label-md text-label-md {{ $active === $key ? 'bg-primary-container text-on-primary' : 'bg-surface-container-high text-on-surface-variant' }}">{{ $label }}</a>
                     @endif
                 @endforeach
+                <a href="{{ route('dashboard') }}" class="shrink-0 px-3 py-1.5 rounded-full flex items-center gap-1.5 bg-primary-fixed/60 text-primary-container font-label-md text-label-md">
+                    <span class="material-symbols-outlined text-[14px]">open_in_new</span> {{ __('Aplikasyon piblik') }}
+                </a>
             </nav>
         </header>
 
@@ -91,5 +101,6 @@
         </main>
     </div>
 </div>
+@include('partials.help-widget', ['audience' => 'admin'])
 </body>
 </html>

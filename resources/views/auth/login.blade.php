@@ -1,40 +1,43 @@
 <x-guest-layout>
-    <div class="grid grid-cols-2 bg-surface-container-high p-1 rounded-xl mb-space-lg font-label-lg text-label-lg text-center">
-        <span class="py-3 rounded-lg bg-white shadow-sm text-primary-container">{{ __('Log in') }}</span>
-        <a href="{{ route('register') }}" class="py-3 text-on-surface-variant">{{ __('Register') }}</a>
-    </div>
+    @if (session('status'))
+        <div class="alert-ok mb-space-md">{{ session('status') }}</div>
+    @endif
 
-    @if (session('status'))<div class="alert-ok mb-space-md">{{ session('status') }}</div>@endif
-
-    <form method="POST" action="{{ route('login') }}" class="space-y-space-md" x-data="{ show: false }">
+    <form method="POST" action="{{ route('login') }}" class="flex flex-col gap-space-md" x-data="{ show: false }">
         @csrf
-        <div>
-            <label for="email" class="label">{{ __('Email') }}</label>
-            <input id="email" name="email" type="email" value="{{ old('email') }}" class="input" required autofocus autocomplete="username" placeholder="non@imel.com">
+
+        <div class="flex flex-col gap-1.5 text-left">
+            <label class="label" for="email">{{ __('Adrès imèl') }}</label>
+            <input id="email" name="email" type="email" value="{{ old('email') }}" required autofocus autocomplete="username"
+                   class="input" placeholder="{{ __('egzanp: non@imel.com') }}">
             <x-input-error :messages="$errors->get('email')" class="mt-1" />
         </div>
 
-        <div>
-            <div class="flex justify-between">
-                <label for="password" class="label">{{ __('Password') }}</label>
-                @if (Route::has('password.request'))
-                    <a href="{{ route('password.request') }}" class="font-label-md text-label-md text-primary-container">{{ __('Forgot your password?') }}</a>
-                @endif
-            </div>
+        <div class="flex flex-col gap-1.5 text-left">
+            <label class="label" for="password">{{ __('Modpas') }}</label>
             <div class="relative">
-                <input id="password" name="password" :type="show ? 'text' : 'password'" class="input pr-12" required autocomplete="current-password">
-                <button type="button" @click="show = !show" class="absolute inset-y-0 right-3 flex items-center text-on-surface-variant" tabindex="-1">
-                    <span class="material-symbols-outlined" x-text="show ? 'visibility_off' : 'visibility'">visibility</span>
+                <input id="password" name="password" :type="show ? 'text' : 'password'" required autocomplete="current-password"
+                       class="input pr-12" placeholder="••••••••">
+                <button type="button" @click="show = !show" aria-label="{{ __('Chanje vizibilite modpas la') }}"
+                        class="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container">
+                    <span class="material-symbols-outlined text-[20px]" x-text="show ? 'visibility_off' : 'visibility'">visibility</span>
                 </button>
             </div>
             <x-input-error :messages="$errors->get('password')" class="mt-1" />
+            @if (Route::has('password.request'))
+                <div class="flex justify-end">
+                    <a href="{{ route('password.request') }}" class="font-label-sm text-label-sm text-primary hover:underline">{{ __('Ou bliye modpas ou?') }}</a>
+                </div>
+            @endif
         </div>
 
-        <label class="flex items-center gap-2 text-on-surface-variant">
-            <input type="checkbox" name="remember" class="rounded border-slate-300 text-primary-container focus:ring-primary-container/30">
-            {{ __('Remember me') }}
-        </label>
-
-        <button class="btn-primary w-full">{{ __('Konekte sou kont ou') }} <span class="material-symbols-outlined">arrow_forward</span></button>
+        <button class="btn-primary w-full">{{ __('Konekte') }}</button>
     </form>
+
+    @include('partials.google-button')
+
+    <p class="mt-space-md text-center font-body-md text-body-md text-on-surface-variant">
+        {{ __('Pa gen kont?') }}
+        <a href="{{ route('register') }}" class="font-label-lg text-label-lg text-primary hover:underline ml-1">{{ __('Kreye yon kont') }}</a>
+    </p>
 </x-guest-layout>

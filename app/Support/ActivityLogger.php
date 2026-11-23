@@ -7,9 +7,12 @@ use App\Models\Contribution;
 use App\Models\Payout;
 use App\Models\Tontine;
 use Illuminate\Auth\Events\Login;
+use Illuminate\Auth\Events\Failed;
+use Illuminate\Auth\Events\Lockout;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Enregistre les actions clés sans toucher aux contrôleurs.
@@ -21,6 +24,14 @@ class ActivityLogger
     {
         Event::listen(Registered::class, fn ($e) => ActivityLog::record('register', $e->user));
         Event::listen(Login::class, fn ($e) => ActivityLog::record('login', $e->user));
+        Event::listen(Failed::class, fn () => Log::warning('Authentication failed', [
+            'ip' => request()->ip(),
+            'route' => request()->route()?->getName(),
+        ]));
+        Event::listen(Lockout::class, fn () => Log::warning('Authentication rate limit reached', [
+            'ip' => request()->ip(),
+            'route' => request()->route()?->getName(),
+        ]));
 
         Tontine::created(fn (Tontine $t) => ActivityLog::record(
             'tontine_created', Auth::user() ?? $t->admin,

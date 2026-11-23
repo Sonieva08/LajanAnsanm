@@ -16,9 +16,11 @@ trait BuildsTontines
     protected function premium(User $user, string $slug = 'pro'): User
     {
         if (! $user->subscriptions()->where('status', 'active')->exists()) {
+            $plan = Plan::where('slug', $slug)->firstOrFail();
             Subscription::create([
-                'user_id' => $user->id, 'plan_id' => Plan::where('slug', $slug)->firstOrFail()->id, 'status' => 'active',
+                'user_id' => $user->id, 'plan_id' => $plan->id, 'status' => 'active',
                 'starts_at' => now(), 'ends_at' => now()->addYear(), 'amount' => 0, 'source' => 'owner_grant',
+                'plan_snapshot' => $plan->snapshotData(),
             ]);
         }
 
@@ -90,11 +92,25 @@ trait BuildsTontines
         }
     }
 
-    protected function payout(Tontine $t, Cycle $c, bool $confirm = false): TestResponse
+    protected function payoutData(Cycle $cycle, array $extra = []): array
+    {
+        $beneficiary = $cycle->beneficiary()->first();
+
+        return array_merge([
+            'method' => $beneficiary?->payout_method ?? 'cash',
+            'account' => $beneficiary?->payout_account,
+            'account_name' => $beneficiary?->payout_name,
+            'sender_method' => 'moncash',
+            'sender_phone' => '+509 3700 0000',
+            'transaction_ref' => 'TX-TEST-12345',
+        ], $extra);
+    }
+
+    protected function payout(Tontine $t, Cycle $c, bool $confirm = false, array $extra = []): TestResponse
     {
         return $this->actingAs($t->admin)->post(
             route('tontines.cycles.payout.store', [$t, $c]),
-            $confirm ? ['confirm_incomplete' => 1] : []
+            $this->payoutData($c, array_merge($confirm ? ['confirm_incomplete' => 1] : [], $extra))
         );
     }
 
@@ -111,6 +127,12 @@ trait BuildsTontines
             $cycle = $this->openCycle($t);
             $this->payAll($t, $cycle);
             $this->payout($t, $cycle)->assertSessionHasNoErrors();
+
+            if ($t->member_portal_enabled) {
+                $beneficiary = $cycle->beneficiary;
+                $this->get($beneficiary->fresh()->portalUrl())->assertRedirect(route('portal.home'));
+                $this->post(route('portal.payout.confirm', $cycle->payout))->assertSessionHasNoErrors();
+            }
         }
 
         return $t->fresh()->load('admin');

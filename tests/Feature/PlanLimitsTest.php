@@ -24,10 +24,21 @@ class PlanLimitsTest extends TestCase
 
     private function sub(User $u, string $endsAt, string $slug = 'pro'): Subscription
     {
+        $plan = Plan::where('slug', $slug)->firstOrFail();
+
         return Subscription::create([
-            'user_id' => $u->id, 'plan_id' => Plan::where('slug', $slug)->value('id'), 'status' => 'active',
+            'user_id' => $u->id, 'plan_id' => $plan->id, 'status' => 'active',
             'starts_at' => now()->subYear(), 'ends_at' => Carbon::parse($endsAt), 'amount' => 0, 'source' => 'owner_grant',
+            'plan_snapshot' => $plan->snapshotData(),
         ]);
+    }
+
+    private function freeUser(): User
+    {
+        $user = User::factory()->create();
+        $this->sub($user, now()->addMonth()->toDateTimeString(), 'gratis');
+
+        return $user;
     }
 
     private function owner(): User
@@ -40,29 +51,25 @@ class PlanLimitsTest extends TestCase
 
     /* ---------- Limites du plan gratuit ---------- */
 
-    public function test_a_free_user_can_create_one_tontine_then_is_sent_to_the_plans_page(): void
+    public function test_a_user_without_a_subscription_cannot_create_a_tontine(): void
     {
         $u = User::factory()->create();
 
-        $this->actingAs($u)->post(route('tontines.store'), $this->payload())->assertSessionHasNoErrors();
-        $this->assertSame(1, $u->tontines()->count());
-
-        $this->actingAs($u)->post(route('tontines.store'), $this->payload(['name' => 'Deux']))
-            ->assertRedirect(route('plans'))->assertSessionHas('limit.need', 'tontines')->assertSessionHas('limit.max', 1);
-
-        $this->assertSame(1, $u->tontines()->count());
+        $this->actingAs($u)->post(route('tontines.store'), $this->payload())
+            ->assertRedirect(route('plans'))->assertSessionHas('limit.need', 'tontines');
+        $this->assertSame(0, $u->tontines()->count());
     }
 
     public function test_completed_and_legacy_tontines_do_not_count(): void
     {
-        $u = User::factory()->create();
+        $u = $this->freeUser();
         $done = $this->makeTontine($u, 3, [], false);
         $done->update(['status' => 'completed']);
 
         $this->actingAs($u)->post(route('tontines.store'), $this->payload())->assertSessionHasNoErrors();
         $this->assertSame(2, $u->tontines()->count());
 
-        $legacy = User::factory()->create();
+        $legacy = $this->freeUser();
         $this->makeTontine($legacy, 3, [], false)->forceFill(['is_legacy' => true])->save();
         $this->actingAs($legacy)->post(route('tontines.store'), $this->payload())->assertSessionHasNoErrors();
         $this->assertSame(2, $legacy->tontines()->count());
@@ -70,7 +77,7 @@ class PlanLimitsTest extends TestCase
 
     public function test_the_member_limit_is_enforced_on_the_server(): void
     {
-        $u = User::factory()->create();
+        $u = $this->freeUser();
         $t = $this->makeTontine($u, 10, [], false);
 
         $this->actingAs($u)->post(route('tontines.members.store', $t), ['name' => 'Onzyèm'])
@@ -85,19 +92,20 @@ class PlanLimitsTest extends TestCase
         $t = $this->makeTontine($u, 10, [], false);
         $t->forceFill(['is_legacy' => true])->save();
 
-        $this->actingAs($u)->post(route('tontines.members.store', $t), ['name' => 'Onzyèm'])->assertSessionHasNoErrors();
+        $this->actingAs($u)->post(route('tontines.members.store', $t), ['name' => 'Onzyèm', 'consent' => 1])->assertSessionHasNoErrors();
         $this->assertSame(11, $t->members()->count());
     }
 
-    public function test_a_paid_plan_raises_the_limits_and_null_means_unlimited(): void
+    public function test_editing_a_plan_does_not_change_the_benefits_of_an_active_subscription(): void
     {
         $u = $this->premiumUser();
         $this->makeTontine($u, 3);
         $this->actingAs($u)->post(route('tontines.store'), $this->payload())->assertSessionHasNoErrors();
 
         Plan::where('slug', 'pro')->update(['max_active_tontines' => null, 'max_members_per_tontine' => null]);
-        $this->assertTrue(Entitlements::for($u)->canCreateTontine());
-        $this->assertNull(Entitlements::for($u)->maxMembers());
+        $entitlements = Entitlements::for($u);
+        $this->assertSame(10, $entitlements->maxTontines());
+        $this->assertSame(50, $entitlements->maxMembers());
     }
 
     public function test_the_owner_is_never_limited(): void
@@ -123,7 +131,7 @@ class PlanLimitsTest extends TestCase
 
     public function test_features_are_blocked_on_the_free_plan(): void
     {
-        $u = User::factory()->create();
+        $u = $this->freeUser();
         $t = $this->start($this->makeTontine($u, 3, [], false));
 
         $this->actingAs($u)->get(route('tontines.reports.round', [$t, 1]))->assertOk();
@@ -138,7 +146,7 @@ class PlanLimitsTest extends TestCase
 
     public function test_the_organizer_fee_cannot_be_set_without_the_feature(): void
     {
-        $u = User::factory()->create();
+        $u = $this->freeUser();
 
         $this->actingAs($u)->post(route('tontines.store'), $this->payload(['organizer_fee_percent' => 20]))->assertSessionHasNoErrors();
 
@@ -147,7 +155,7 @@ class PlanLimitsTest extends TestCase
 
     public function test_whatsapp_reminders_are_a_paid_feature(): void
     {
-        $free = User::factory()->create();
+        $free = $this->freeUser();
         $t = $this->start($this->makeTontine($free, 3, [], false));
         $this->actingAs($free)->get(route('tontines.contributions.index', $t))->assertOk()->assertDontSee('wa.me');
 
@@ -219,12 +227,13 @@ class PlanLimitsTest extends TestCase
         $second = $this->makeTontine($u, 3);
         $u->subscriptions()->update(['ends_at' => now()->subDays(30)]);
 
-        $this->actingAs($u)->post(route('tontines.members.store', $second), ['name' => 'Bloke'])
+        $this->actingAs($u)->post(route('tontines.members.store', $second), ['name' => 'Bloke', 'consent' => 1])
             ->assertSessionHas('subscription_notice');
         $this->assertSame(3, $second->members()->count());
 
-        $this->actingAs($u)->post(route('tontines.members.store', $first), ['name' => 'Pase'])->assertSessionHasNoErrors();
-        $this->assertSame(4, $first->members()->count());
+        $this->actingAs($u)->post(route('tontines.members.store', $first), ['name' => 'Pase', 'consent' => 1])
+            ->assertSessionHas('subscription_notice');
+        $this->assertSame(3, $first->members()->count());
 
         $this->actingAs($u)->get(route('tontines.show', $second))->assertOk();
         $this->actingAs($u)->get(route('tontines.members.index', $second))->assertOk();

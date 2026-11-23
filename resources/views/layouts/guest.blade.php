@@ -4,7 +4,14 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>{{ config('app.name', 'LajanAnsanm') }}</title>
-    <link rel="icon" type="image/svg+xml" href="{{ asset('images/logo.svg') }}">
+    <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="any">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('images/favicon-32.png') }}">
+    <link rel="apple-touch-icon" href="{{ asset('images/apple-touch-icon.png') }}">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <meta name="theme-color" content="#1e3a8a">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="LajanAnsanm">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -13,9 +20,11 @@
     <div class="self-end"><x-lang-switcher /></div>
 
     <div class="w-full max-w-md text-center mt-space-lg">
-        <img src="{{ asset('images/logo.svg') }}" alt="LajanAnsanm" class="h-24 w-24 mx-auto">
-        <h1 class="font-headline-xl-mobile text-headline-xl-mobile text-primary-container mt-space-md">LajanAnsanm</h1>
-        <p class="text-on-surface-variant mt-1">{{ __('Lajan ansanm, pi fò ansanm') }}</p>
+        <picture>
+            <source srcset="{{ asset('images/logo-full.webp') }}" type="image/webp">
+            <img src="{{ asset('images/logo-full.png') }}" alt="LajanAnsanm — Jere Tontin ou, Bati Avenir ou" width="640" height="496" class="w-64 max-w-full h-auto mx-auto">
+        </picture>
+        <h1 class="sr-only">LajanAnsanm</h1>
     </div>
 
     <div class="w-full max-w-md card !p-space-lg mt-space-lg">{{ $slot }}</div>
@@ -24,5 +33,7 @@
         <span class="material-symbols-outlined text-[18px] text-primary-container">verified_user</span>
         {{ __('Sistèm sekirize pou kominote ayisyen an') }}
     </p>
+
+    @include('partials.help-widget', ['audience' => 'guest'])
 </body>
 </html>

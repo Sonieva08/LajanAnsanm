@@ -52,7 +52,11 @@ return [
     |
     */
 
-    'url' => env('APP_URL', 'http://localhost'),
+    'url' => env('APP_URL', 'https://www.lajanansanm.com'),
+
+    'force_https' => env('APP_FORCE_HTTPS', env('APP_ENV') === 'production'),
+
+    'trusted_proxies' => env('TRUSTED_PROXIES', '127.0.0.1,::1'),
 
     /*
     |--------------------------------------------------------------------------

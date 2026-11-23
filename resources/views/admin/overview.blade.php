@@ -8,7 +8,7 @@
     <div class="flex flex-wrap items-start justify-between gap-4 mb-space-lg">
         <div>
             <h1 class="font-headline-lg text-headline-lg">{{ __('Vi jeneral konsòl la') }}</h1>
-            <p class="text-on-surface-variant max-w-2xl">{{ __('Chif total sèlman. Nou pa montre non ni telefòn manm ki nan tontin yo.') }}</p>
+            <p class="text-on-surface-variant max-w-2xl">{{ __('Chif total sèlman. Nou pa montre non ni telefòn manm ki nan sòl yo.') }}</p>
         </div>
         <div class="flex bg-surface-container-high p-1 rounded-xl font-label-md text-label-md">
             @foreach ([7, 30, 90] as $d)
@@ -25,7 +25,7 @@
             <p class="font-body-sm text-body-sm {{ $trend === null ? 'text-slate-400' : ($trend >= 0 ? 'text-emerald-600' : 'text-secondary') }}">
                 {{ $trend === null ? '—' : ($trend >= 0 ? '▲ +' : '▼ ') . $trend . '%' }} · {{ $days }} {{ __('jou') }}</p></div>
         <div class="card"><p class="font-label-sm text-label-sm uppercase text-on-surface-variant">{{ __('Itilizatè aktif') }}</p><p class="font-headline-md text-headline-md tabular-nums">{{ number_format($kpi['active_users']) }}</p><p class="font-body-sm text-body-sm text-on-surface-variant">30 {{ __('jou') }}</p></div>
-        <div class="card"><p class="font-label-sm text-label-sm uppercase text-on-surface-variant">{{ __('Tontin aktif') }}</p><p class="font-headline-md text-headline-md tabular-nums">{{ number_format($kpi['active_tontines']) }}</p><p class="font-body-sm text-body-sm text-on-surface-variant">{{ $kpi['completed_tontines'] }} {{ __('fini') }}</p></div>
+        <div class="card"><p class="font-label-sm text-label-sm uppercase text-on-surface-variant">{{ __('Sòl aktif') }}</p><p class="font-headline-md text-headline-md tabular-nums">{{ number_format($kpi['active_tontines']) }}</p><p class="font-body-sm text-body-sm text-on-surface-variant">{{ $kpi['completed_tontines'] }} {{ __('fini') }}</p></div>
         <div class="card"><p class="font-label-sm text-label-sm uppercase text-on-surface-variant">{{ __('Volim kotizasyon') }}</p><p class="font-headline-md text-headline-md tabular-nums">{{ $money($kpi['volume_month']) }}</p><p class="font-body-sm text-body-sm text-on-surface-variant">{{ $cur }} · {{ __('mwa sa a') }}</p></div>
         <div class="card"><p class="font-label-sm text-label-sm uppercase text-on-surface-variant">{{ __('Vèsman mwa sa a') }}</p><p class="font-headline-md text-headline-md tabular-nums">{{ $money($kpi['payouts_month']) }}</p><p class="font-body-sm text-body-sm text-on-surface-variant">{{ $cur }} · net</p></div>
     </div>
@@ -34,8 +34,8 @@
     <div class="grid lg:grid-cols-2 gap-space-md mb-space-lg">
         <div class="card space-y-space-sm">
             <div class="flex flex-wrap items-center justify-between gap-2">
-                <div><h2 class="font-title-lg text-title-lg">{{ __('Kwasans') }}</h2><p class="font-body-sm text-body-sm text-on-surface-variant">{{ __('Nouvo itilizatè ak nouvo tontin') }}</p></div>
-                <div class="flex gap-3 font-label-sm text-label-sm"><span class="flex items-center gap-1"><i class="w-3 h-3 rounded-full" style="background:#0c2382"></i>{{ __('Itilizatè') }}</span><span class="flex items-center gap-1"><i class="w-3 h-3 rounded-full" style="background:#10b981"></i>{{ __('Tontin') }}</span></div>
+                <div><h2 class="font-title-lg text-title-lg">{{ __('Kwasans') }}</h2><p class="font-body-sm text-body-sm text-on-surface-variant">{{ __('Nouvo itilizatè ak nouvo sòl') }}</p></div>
+                <div class="flex gap-3 font-label-sm text-label-sm"><span class="flex items-center gap-1"><i class="w-3 h-3 rounded-full" style="background:#0c2382"></i>{{ __('Itilizatè') }}</span><span class="flex items-center gap-1"><i class="w-3 h-3 rounded-full" style="background:#10b981"></i>{{ __('Sòl') }}</span></div>
             </div>
             <x-admin.line-chart :labels="$charts['labels']" :series="[['name' => 'u', 'color' => '#0c2382', 'values' => $charts['signups']], ['name' => 't', 'color' => '#10b981', 'values' => $charts['tontines']]]" />
         </div>

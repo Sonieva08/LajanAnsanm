@@ -46,8 +46,15 @@ class EnforceSubscription
             return $this->readonly($request);
         }
 
-        if (in_array($name, ['tontines.members.store', 'tontines.members.reactivate'], true) && ! $ent->canAddMember($tontine)) {
-            return $this->limit($request, 'members', $tontine->members()->where('is_active', true)->count(), $ent->maxMembers());
+        if (in_array($name, ['tontines.members.store', 'tontines.members.reactivate', 'tontines.members.invite'], true) && ! $ent->canAddMember($tontine)) {
+            $used = $tontine->members()->where(function ($query) {
+                $query->where('is_active', true)
+                    ->orWhere(function ($pending) {
+                        $pending->whereNotNull('invited_at')->whereNull('invitation_accepted_at');
+                    });
+            })->count();
+
+            return $this->limit($request, 'members', $used, $ent->maxMembers());
         }
 
         if ($name === 'tontines.cycles.restart' && ! $ent->has('restart_round')) {
@@ -73,9 +80,9 @@ class EnforceSubscription
     private function readonly(Request $request): Response
     {
         if ($request->expectsJson()) {
-            return response()->json(['message' => __('Tontin sa a an lekti sèlman.')], 403);
+            return response()->json(['message' => __('Sòl sa a an lekti sèlman.')], 403);
         }
 
-        return back()->with('subscription_notice', __('Tontin sa a an lekti sèlman paske plan ou an pa kouvri li ankò. Renouvle oswa chwazi yon plan pou modifye li.'));
+        return back()->with('subscription_notice', __('Sòl sa a an lekti sèlman paske plan ou an pa kouvri li ankò. Renouvle oswa chwazi yon plan pou modifye li.'));
     }
 }

@@ -9,7 +9,9 @@ use App\Services\SubscriptionService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class RequestController extends Controller
 {
@@ -52,5 +54,12 @@ class RequestController extends Controller
         }
 
         return back()->with('status', __('Demann rejte.'));
+    }
+
+    public function receipt(SubscriptionRequest $subscriptionRequest): StreamedResponse
+    {
+        abort_unless($subscriptionRequest->receiptExists(), 404);
+
+        return Storage::disk('local')->response($subscriptionRequest->receipt_path);
     }
 }

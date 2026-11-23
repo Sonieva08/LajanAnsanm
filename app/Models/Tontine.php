@@ -3,17 +3,22 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
+use Illuminate\Support\Facades\Storage;
 
 class Tontine extends Model
 {
+    use HasFactory;
+
     public const MAX_FEE_PERCENT = 30;
 
     protected $fillable = [
         'admin_id', 'name', 'amount_per_period', 'organizer_fee_percent', 'period_type', 'start_date', 'status', 'current_round',
+        'member_portal_enabled', 'portal_payment',
     ];
 
     protected function casts(): array
@@ -22,6 +27,8 @@ class Tontine extends Model
             'amount_per_period' => 'decimal:2',
             'organizer_fee_percent' => 'decimal:2',
             'start_date' => 'date',
+            'member_portal_enabled' => 'boolean',
+            'portal_payment' => 'array',
         ];
     }
 
@@ -33,6 +40,11 @@ class Tontine extends Model
     public function members(): HasMany
     {
         return $this->hasMany(Member::class)->orderBy('position');
+    }
+
+    public function invitations(): HasMany
+    {
+        return $this->hasMany(Invitation::class);
     }
 
     // Tous les tours de tous les kòl (historique complet)
@@ -111,5 +123,58 @@ class Tontine extends Model
         foreach ($ids as $i => $id) {
             Member::whereKey($id)->update(['position' => $i + 1]);
         }
+    }
+
+    // Paiements déclarés par les membres (en attente, validés ou refusés)
+    public function declarations(): HasManyThrough
+    {
+        return $this->hasManyThrough(PaymentDeclaration::class, Cycle::class);
+    }
+
+    public function payouts(): HasManyThrough
+    {
+        return $this->hasManyThrough(Payout::class, Cycle::class);
+    }
+
+    // Versements que le bénéficiaire dit ne pas avoir reçus
+    public function disputedPayoutsCount(): int
+    {
+        return $this->payouts()->where('payouts.member_response', 'not_received')->count();
+    }
+
+    public function pendingDeclarationsCount(): int
+    {
+        return $this->declarations()->where('payment_declarations.status', 'pending')->count();
+    }
+
+    // Coordonnées de paiement affichées aux membres (saisies par le créateur)
+    public function portalPayment(): array
+    {
+        return array_merge(
+            [
+                'moncash_number' => null, 'moncash_name' => null, 'moncash_qr_path' => null,
+                'natcash_number' => null, 'natcash_name' => null, 'natcash_qr_path' => null,
+                'bank_info' => null, 'instructions' => null,
+            ],
+            (array) $this->portal_payment
+        );
+    }
+
+    // Méthodes réellement configurées => libellé
+    public function portalPaymentMethods(): array
+    {
+        $p = $this->portalPayment();
+        $out = [];
+        if (filled($p['moncash_qr_path']) && Storage::disk('local')->exists($p['moncash_qr_path'])) {
+            $out['moncash'] = 'MonCash';
+        }
+        if (filled($p['natcash_qr_path']) && Storage::disk('local')->exists($p['natcash_qr_path'])) {
+            $out['natcash'] = 'NatCash';
+        }
+        if (filled($p['bank_info'])) {
+            $out['bank'] = 'Bank';
+        }
+
+        return $out;
     }
 }

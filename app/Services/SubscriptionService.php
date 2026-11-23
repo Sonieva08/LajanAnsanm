@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\ActivityLog;
 use App\Models\Plan;
 use App\Models\Subscription;
+use App\Models\SubscriptionPayment;
 use App\Models\SubscriptionRequest;
 use App\Models\User;
 use Illuminate\Support\Carbon;
@@ -29,11 +30,13 @@ class SubscriptionService
             $ends = $endsAt ?? $start->copy()->addMonthsNoOverflow(Plan::PERIODS[$r->billing_period]);
 
             $current?->update(['status' => 'replaced']);
+            $planSnapshot = $r->plan_snapshot ?? $r->plan->snapshotData();
 
             $sub = Subscription::create([
                 'user_id' => $r->user_id, 'plan_id' => $r->plan_id, 'status' => 'active',
                 'billing_period' => $r->billing_period, 'starts_at' => $start, 'ends_at' => $ends,
                 'amount' => $r->amount, 'source' => 'request', 'note' => $note, 'granted_by' => $owner->id,
+                'plan_snapshot' => $planSnapshot,
             ]);
 
             $r->update([
@@ -41,10 +44,29 @@ class SubscriptionService
                 'review_note' => $note, 'subscription_id' => $sub->id,
             ]);
 
-            ActivityLog::record('subscription_activated', $owner, ['plan' => $r->plan->name, 'amount' => (float) $r->amount, 'user_id' => $r->user_id]);
+            ActivityLog::record('subscription_activated', $owner, ['plan' => $planSnapshot['name'], 'amount' => (float) $r->amount, 'user_id' => $r->user_id]);
 
             return $sub;
         });
+    }
+
+    // Active l'abonnement d'un paiement en ligne confirmé (l'appelant tient le verrou sur le paiement)
+    public function activateFromPayment(SubscriptionPayment $payment): Subscription
+    {
+        $current = $payment->user->subscriptions()->where('status', 'active')->orderByDesc('ends_at')->first();
+
+        // Renouvellement du même plan encore valable : on prolonge à partir de la fin actuelle
+        $start = ($current && $current->plan_id === $payment->plan_id && $current->ends_at->gt(now())) ? $current->ends_at->copy() : now();
+        $ends = $start->copy()->addMonthsNoOverflow(Plan::PERIODS[$payment->billing_period]);
+
+        $current?->update(['status' => 'replaced']);
+
+        return Subscription::create([
+            'user_id' => $payment->user_id, 'plan_id' => $payment->plan_id, 'status' => 'active',
+            'billing_period' => $payment->billing_period, 'starts_at' => $start, 'ends_at' => $ends,
+            'amount' => $payment->amount, 'source' => 'online', 'note' => 'MonCashConnect '.$payment->reference_id, 'granted_by' => null,
+            'plan_snapshot' => $payment->plan_snapshot ?? $payment->plan->snapshotData(),
+        ]);
     }
 
     public function reject(SubscriptionRequest $request, User $owner, string $note): bool
@@ -72,6 +94,7 @@ class SubscriptionService
             $sub = Subscription::create([
                 'user_id' => $user->id, 'plan_id' => $plan->id, 'status' => 'active', 'starts_at' => now(),
                 'ends_at' => $endsAt, 'amount' => 0, 'source' => 'owner_grant', 'note' => $note, 'granted_by' => $owner->id,
+                'plan_snapshot' => $plan->snapshotData(),
             ]);
 
             ActivityLog::record('subscription_granted', $owner, ['plan' => $plan->name, 'user_id' => $user->id]);

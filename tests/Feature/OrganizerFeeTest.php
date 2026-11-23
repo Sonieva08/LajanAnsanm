@@ -115,7 +115,7 @@ class OrganizerFeeTest extends TestCase
         $this->payAll($t, $cycle);
 
         $this->actingAs($t->admin)->post(route('tontines.cycles.payout.store', [$t, $cycle]),
-            ['fee_amount' => 1400, 'fee_percent' => 90, 'amount' => 1]);
+            $this->payoutData($cycle, ['fee_amount' => 1400, 'fee_percent' => 90, 'amount' => 1]));
 
         $p = Payout::firstOrFail();
         $this->assertEquals(0, $p->fee_amount);
@@ -180,8 +180,8 @@ class OrganizerFeeTest extends TestCase
 
         $csv = $this->actingAs($t->admin)
             ->get(route('tontines.reports.tour', [$t, $cycle, 'format' => 'csv']))->streamedContent();
-        $this->assertMatchesRegularExpression('/,150\r?\n/', $csv);
-        $this->assertMatchesRegularExpression('/,1350\r?\n/', $csv);
+        $this->assertMatchesRegularExpression('/[;,]150(;|\r?\n)/', $csv);
+        $this->assertMatchesRegularExpression('/[;,]1350(;|\r?\n)/', $csv);
     }
 
     public function test_pages_render_with_a_fee(): void

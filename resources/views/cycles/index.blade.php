@@ -53,15 +53,15 @@
                 @endif
                 <div class="flex gap-2 bg-amber-50 text-amber-800 p-space-sm rounded-xl font-body-sm text-body-sm">
                     <span class="material-symbols-outlined text-[18px]">warning</span>
-                    {{ __('Apre sa, lis manm yo ap bloke. Ou ka anile sèlman si pa gen okenn peman anrejistre.') }}
+                    {{ __('Apre sa, lis manm yo bloke.') }} <x-hint>{{ __('Ou ka anile kalandriye a sèlman si pa gen okenn peman anrejistre.') }}</x-hint>
                 </div>
                 @if ($activeMembers >= 2)
-                    <form method="POST" action="{{ route('tontines.cycles.generate', $tontine) }}" onsubmit="return confirm('{{ __('Jenere tou yo epi kòmanse tontine a?') }}')">
+                    <form method="POST" action="{{ route('tontines.cycles.generate', $tontine) }}" onsubmit="return confirm('{{ __('Jenere tou yo epi kòmanse sòl la?') }}')">
                         @csrf
                         <button class="btn-primary w-full"><span class="material-symbols-outlined">rocket_launch</span> {{ __('Jenere tou yo') }}</button>
                     </form>
                 @else
-                    <p class="text-secondary">{{ __('Ou bezwen omwen 2 manm pou kòmanse tontine a.') }}</p>
+                    <p class="text-secondary">{{ __('Ou bezwen omwen 2 manm pou kòmanse sòl la.') }}</p>
                     <a href="{{ route('tontines.members.index', $tontine) }}" class="btn-secondary w-full">{{ __('Jere manm yo') }}</a>
                 @endif
             </div>

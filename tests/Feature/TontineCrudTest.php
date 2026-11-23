@@ -24,7 +24,7 @@ class TontineCrudTest extends TestCase
 
     public function test_a_user_can_create_a_tontine_owned_by_them(): void
     {
-        $user = User::factory()->create();
+        $user = $this->premiumUser();
 
         $this->actingAs($user)->post(route('tontines.store'), $this->payload())->assertRedirect();
 
@@ -36,7 +36,7 @@ class TontineCrudTest extends TestCase
 
     public function test_the_admin_id_and_status_cannot_be_forced_from_the_form(): void
     {
-        $user = User::factory()->create();
+        $user = $this->premiumUser();
         $other = User::factory()->create();
 
         $this->actingAs($user)->post(route('tontines.store'),
@@ -50,7 +50,7 @@ class TontineCrudTest extends TestCase
 
     public function test_validation_rejects_bad_input(): void
     {
-        $user = User::factory()->create();
+        $user = $this->premiumUser();
 
         $this->actingAs($user)->post(route('tontines.store'), $this->payload(['amount_per_period' => 0]))
             ->assertSessionHasErrors('amount_per_period');

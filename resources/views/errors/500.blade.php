@@ -5,6 +5,6 @@
             {{ __('Referans') }} : SRV-{{ now()->format('ymd-His') }}
         </div>
     </x-slot:pill>
-    <button type="button" onclick="location.assign(location.href)" class="btn-primary flex-1"><span class="material-symbols-outlined">refresh</span> {{ __('Eseye ankò') }}</button>
+    <button type="button" x-on:click="location.assign(location.href)" class="btn-primary flex-1"><span class="material-symbols-outlined">refresh</span> {{ __('Eseye ankò') }}</button>
     <a href="{{ url('/') }}" class="btn-secondary flex-1 !bg-surface-container-low"><span class="material-symbols-outlined">home</span> {{ __('Paj dakèy') }}</a>
 </x-error-layout>

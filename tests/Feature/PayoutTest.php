@@ -47,7 +47,7 @@ class PayoutTest extends TestCase
         // Un montant envoyé par le client est ignoré
         $this->actingAs($t->admin)->post(
             route('tontines.cycles.payout.store', [$t, $cycle]),
-            ['confirm_incomplete' => 1, 'amount' => 999999, 'member_id' => $members[2]->id]
+            $this->payoutData($cycle, ['confirm_incomplete' => 1, 'amount' => 999999, 'member_id' => $members[2]->id])
         );
 
         $payout = Payout::firstOrFail();

@@ -72,9 +72,52 @@ class ReportTest extends TestCase
         $content = $res->streamedContent();
         $this->assertStringStartsWith("\xEF\xBB\xBF", $content);
         $this->assertStringContainsString('Membre 1', $content);
+        $this->assertStringContainsString('LajanAnsanm', $content);
+        $this->assertStringContainsString('Rapport de tontine', $content);
+        $this->assertStringContainsString('Detay pa manm', $content);
+        $this->assertStringContainsString('Lajan atann (HTG)', $content);
+        $lines = explode("\n", substr($content, 3));
+        $inDetailTable = false;
+        $detailRowCount = 0;
+        foreach ($lines as $line) {
+            $fields = str_getcsv(trim($line), ',');
+            if ($fields[0] ?? '' === 'Detay pa manm') {
+                $inDetailTable = true;
+                continue;
+            }
+            if ($inDetailTable && $fields[0] ?? '' !== '' && !str_starts_with($fields[0] ?? '', '#')) {
+                $this->assertCount(7, $fields, 'Ligne détaillée doit avoir 7 colonnes: ' . $line);
+                $detailRowCount++;
+            }
+            if ($inDetailTable && $fields[0] ?? '' === '') {
+                break;
+            }
+        }
+        $this->assertGreaterThan(0, $detailRowCount);
 
         $res = $this->actingAs($t->admin)->get(route('tontines.reports.round', [$t, 1, 'format' => 'csv']));
         $res->assertOk()->assertDownload();
+        $roundContent = $res->streamedContent();
+        $this->assertStringContainsString('Detay pa manm', $roundContent);
+        $this->assertStringContainsString('Ranmase total (HTG)', $roundContent);
+        $lines = explode("\n", substr($roundContent, 3));
+        $inDetailTable = false;
+        $detailRowCount = 0;
+        foreach ($lines as $line) {
+            $fields = str_getcsv(trim($line), ',');
+            if ($fields[0] ?? '' === 'Detay pa manm') {
+                $inDetailTable = true;
+                continue;
+            }
+            if ($inDetailTable && $fields[0] ?? '' !== '' && !str_starts_with($fields[0] ?? '', '#')) {
+                $this->assertCount(8, $fields, 'Ligne détaillée doit avoir 8 colonnes: ' . $line);
+                $detailRowCount++;
+            }
+            if ($inDetailTable && $fields[0] ?? '' === '') {
+                break;
+            }
+        }
+        $this->assertGreaterThan(0, $detailRowCount);
     }
 
     public function test_csv_neutralises_spreadsheet_formulas(): void

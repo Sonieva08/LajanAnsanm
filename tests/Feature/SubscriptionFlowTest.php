@@ -11,6 +11,8 @@ use App\Models\User;
 use App\Support\Entitlements;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class SubscriptionFlowTest extends TestCase
@@ -20,9 +22,24 @@ class SubscriptionFlowTest extends TestCase
     private function openShop(): Plan
     {
         Plan::where('slug', 'pro')->update(['is_active' => true, 'price_monthly' => 2500, 'price_quarterly' => 6750, 'price_yearly' => 24000]);
-        Setting::set('payment', ['moncash_number' => '+509 3712-8899', 'moncash_name' => 'LajanAnsanm', 'natcash_number' => null, 'natcash_name' => null, 'bank_info' => null, 'instructions' => null]);
+        Storage::fake('local');
+        Storage::disk('local')->put('subscription-payment-qrs/moncash.png', 'QR image');
+        Setting::set('payment', [
+            'moncash_number' => '+509 3712-8899', 'moncash_name' => 'LajanAnsanm',
+            'moncash_qr_path' => 'subscription-payment-qrs/moncash.png',
+            'natcash_number' => null, 'natcash_name' => null, 'natcash_qr_path' => null,
+            'bank_info' => null, 'instructions' => null,
+        ]);
 
         return Plan::where('slug', 'pro')->firstOrFail();
+    }
+
+    private function receipt(): UploadedFile
+    {
+        return UploadedFile::fake()->createWithContent(
+            'receipt.png',
+            base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/l1sAAAAASUVORK5CYII=', true)
+        );
     }
 
     private function owner(): User
@@ -36,7 +53,8 @@ class SubscriptionFlowTest extends TestCase
     private function submit(User $u, Plan $p, array $o = [])
     {
         return $this->actingAs($u)->post(route('plans.request.submit', $p), array_merge([
-            'billing_period' => 'monthly', 'payment_method' => 'moncash', 'payer_phone' => '+509 3712 8899', 'transaction_ref' => 'MC-8942019',
+            'billing_period' => 'monthly', 'payment_method' => 'moncash', 'payer_phone' => '+509 3712 8899',
+            'recipient_account' => '+509 3712-8899', 'transaction_ref' => 'MC-8942019', 'receipt' => $this->receipt(),
         ], $o));
     }
 
@@ -44,7 +62,8 @@ class SubscriptionFlowTest extends TestCase
     {
         return SubscriptionRequest::create(array_merge([
             'user_id' => $u->id, 'plan_id' => $p->id, 'billing_period' => 'monthly', 'amount' => 2500, 'payment_method' => 'moncash',
-            'payer_phone' => '+50937128899', 'transaction_ref' => 'T-' . uniqid(), 'reference_code' => SubscriptionRequest::nextReferenceCode($u),
+            'payer_phone' => '+50937128899', 'recipient_account' => '+509 3712-8899',
+            'transaction_ref' => 'T-' . uniqid(), 'reference_code' => SubscriptionRequest::nextReferenceCode($u),
         ], $o));
     }
 
@@ -55,10 +74,12 @@ class SubscriptionFlowTest extends TestCase
         $this->get(route('plans'))->assertRedirect(route('login'));
 
         $u = User::factory()->create();
-        $this->actingAs($u)->get(route('plans'))->assertOk()->assertSee('Gratis')->assertDontSee('Esansyèl');
+        $this->actingAs($u)->get(route('plans'))->assertOk()
+            ->assertDontSee('data-plan-pricing="gratis"', false)
+            ->assertDontSee('Esansyèl');
 
         $this->openShop();
-        $this->actingAs($u)->get(route('plans'))->assertOk()->assertSee('Pro');
+        $this->actingAs($u)->get(route('plans'))->assertOk()->assertSee('data-plan-pricing="pro"', false);
     }
 
     public function test_a_plan_that_cannot_be_bought_gives_a_404(): void
@@ -75,6 +96,7 @@ class SubscriptionFlowTest extends TestCase
     {
         $pro = $this->openShop();
         Setting::set('payment', []);
+        config(['services.moncashconnect.enabled' => false]);
         $u = User::factory()->create();
 
         $this->actingAs($u)->get(route('plans.request', $pro))->assertOk()->assertSee('data-no-payment', false);
@@ -99,6 +121,89 @@ class SubscriptionFlowTest extends TestCase
         $this->assertSame('pending', $r->status);
         $this->assertSame(1, ActivityLog::where('action', 'subscription_requested')->count());
         $this->actingAs($u)->get(route('subscription'))->assertOk()->assertSee('data-pending-request', false);
+    }
+
+    public function test_manual_subscription_request_can_include_a_receipt_viewable_only_by_its_user_and_the_owner(): void
+    {
+        Storage::fake('local');
+        $pro = $this->openShop();
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->post(route('plans.request.submit', $pro), [
+            'billing_period' => 'monthly',
+            'payment_method' => 'moncash',
+            'payer_phone' => '+509 3712 8899',
+            'recipient_account' => '+509 3712-8899',
+            'transaction_ref' => 'MC-RECEIPT-001',
+            'receipt' => UploadedFile::fake()->createWithContent(
+                'receipt.png',
+                base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/l1sAAAAASUVORK5CYII=', true)
+            ),
+        ])->assertRedirect(route('subscription'));
+
+        $subscriptionRequest = SubscriptionRequest::firstOrFail();
+        $this->assertSame('+509 3712-8899', $subscriptionRequest->recipient_account);
+        $this->assertTrue($subscriptionRequest->hasReceipt());
+        Storage::disk('local')->assertExists($subscriptionRequest->receipt_path);
+
+        $this->actingAs($user)->get(route('subscription'))
+            ->assertOk()
+            ->assertSee(route('subscription.requests.receipt', $subscriptionRequest), false)
+            ->assertSee('Nimewo/kont ki te resevwa lajan an')
+            ->assertSee('+509 3712-8899');
+        $this->actingAs($user)->get(route('subscription.requests.receipt', $subscriptionRequest))->assertOk();
+        $this->actingAs(User::factory()->create())->get(route('subscription.requests.receipt', $subscriptionRequest))->assertNotFound();
+
+        $owner = $this->owner();
+        $this->actingAs($owner)->get(route('admin.requests'))
+            ->assertOk()
+            ->assertSee(route('admin.requests.receipt', $subscriptionRequest), false)
+            ->assertSee('+509 3712-8899');
+        $this->actingAs($owner)->get(route('admin.requests.receipt', $subscriptionRequest))->assertOk();
+    }
+
+    public function test_manual_subscription_request_rejects_non_image_receipts(): void
+    {
+        $pro = $this->openShop();
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->post(route('plans.request.submit', $pro), [
+            'billing_period' => 'monthly',
+            'payment_method' => 'moncash',
+            'payer_phone' => '+509 3712 8899',
+            'recipient_account' => '+509 3712-8899',
+            'transaction_ref' => 'MC-RECEIPT-INVALID',
+            'receipt' => UploadedFile::fake()->create('receipt.pdf', 100),
+        ])->assertSessionHasErrors('receipt');
+
+        $this->assertSame(0, SubscriptionRequest::count());
+    }
+
+    public function test_bank_subscription_request_only_requires_the_receipt_not_sender_or_transaction_id(): void
+    {
+        $pro = $this->openShop();
+        Setting::set('payment', array_merge(Setting::paymentInfo(), ['bank_info' => 'BUH 123']));
+        $user = User::factory()->create();
+
+        $this->submit($user, $pro, [
+            'payment_method' => 'bank',
+            'payer_phone' => '',
+            'transaction_ref' => '',
+        ])->assertRedirect(route('subscription'));
+
+        $request = SubscriptionRequest::firstOrFail();
+        $this->assertNull($request->payer_phone);
+        $this->assertNull($request->transaction_ref);
+        $this->assertTrue($request->hasReceipt());
+    }
+
+    public function test_manual_subscription_request_requires_a_receipt_for_every_method(): void
+    {
+        $pro = $this->openShop();
+        $user = User::factory()->create();
+
+        $this->submit($user, $pro, ['receipt' => null])->assertSessionHasErrors('receipt');
+        $this->assertSame(0, SubscriptionRequest::count());
     }
 
     public function test_only_one_pending_request_at_a_time(): void
@@ -128,6 +233,7 @@ class SubscriptionFlowTest extends TestCase
         $u = User::factory()->create();
 
         $this->submit($u, $pro, ['payer_phone' => 'abc'])->assertSessionHasErrors('payer_phone');
+        $this->submit($u, $pro, ['recipient_account' => ''])->assertSessionHasErrors('recipient_account');
         $this->submit($u, $pro, ['transaction_ref' => ''])->assertSessionHasErrors('transaction_ref');
         $this->submit($u, $pro, ['payment_method' => 'bitcoin'])->assertSessionHasErrors('payment_method');
         $this->submit($u, $pro, ['billing_period' => 'weekly'])->assertSessionHasErrors('billing_period');
@@ -261,6 +367,44 @@ class SubscriptionFlowTest extends TestCase
         $this->actingAs($this->owner())->post(route('admin.requests.approve', $r));
 
         $this->assertEquals(2500, $u->subscriptions()->first()->amount);
+    }
+
+    public function test_renewing_uses_the_latest_plan_benefits_without_changing_the_current_term(): void
+    {
+        Carbon::setTestNow('2026-10-10 10:00:00');
+        $pro = $this->openShop();
+        $u = User::factory()->create();
+        $current = Subscription::create([
+            'user_id' => $u->id, 'plan_id' => $pro->id, 'status' => 'active', 'starts_at' => now()->subMonth(),
+            'ends_at' => now()->addDays(10), 'amount' => 2500, 'source' => 'request',
+            'plan_snapshot' => $pro->snapshotData(),
+        ]);
+
+        $pro->update([
+            'max_active_tontines' => null,
+            'max_members_per_tontine' => 100,
+            'features' => ['csv_export'],
+        ]);
+
+        $this->assertSame(10, Entitlements::for($u)->maxTontines());
+        $this->assertSame(50, Entitlements::for($u)->maxMembers());
+        $this->assertTrue(Entitlements::for($u)->has('restart_round'));
+
+        $this->submit($u, $pro, ['transaction_ref' => 'RENEW-001'])->assertRedirect(route('subscription'));
+        $request = SubscriptionRequest::where('user_id', $u->id)->firstOrFail();
+        $this->assertNull($request->plan_snapshot['max_active_tontines']);
+        $this->assertSame(100, $request->plan_snapshot['max_members_per_tontine']);
+
+        $this->actingAs($this->owner())->post(route('admin.requests.approve', $request))->assertSessionHasNoErrors();
+
+        $this->assertSame('replaced', $current->fresh()->status);
+        $entitlements = Entitlements::for($u);
+        $this->assertNull($entitlements->maxTontines());
+        $this->assertSame(100, $entitlements->maxMembers());
+        $this->assertTrue($entitlements->has('csv_export'));
+        $this->assertFalse($entitlements->has('restart_round'));
+
+        Carbon::setTestNow();
     }
 
     public function test_regular_users_cannot_process_requests(): void

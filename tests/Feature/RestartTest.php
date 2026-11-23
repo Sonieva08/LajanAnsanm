@@ -45,7 +45,7 @@ class RestartTest extends TestCase
         $this->assertFalse($t->isLocked());
 
         // On peut ajouter un nouveau membre avant de relancer
-        $this->actingAs($t->admin)->post(route('tontines.members.store', $t), ['name' => 'Nouvelle recrue'])
+        $this->actingAs($t->admin)->post(route('tontines.members.store', $t), ['name' => 'Nouvelle recrue', 'consent' => 1])
             ->assertSessionHasNoErrors();
         $this->assertSame(4, $t->members()->count());
     }
@@ -75,7 +75,7 @@ class RestartTest extends TestCase
         $t = $this->complete($this->start($this->makeTontine(null, 3)));
         $this->restart($t);
         $t = $t->fresh()->load('admin');
-        $this->actingAs($t->admin)->post(route('tontines.members.store', $t), ['name' => 'Nouvelle recrue']);
+        $this->actingAs($t->admin)->post(route('tontines.members.store', $t), ['name' => 'Nouvelle recrue', 'consent' => 1]);
 
         $t = $this->start($t);
 

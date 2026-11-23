@@ -1,0 +1,33 @@
+{
+  "name": "LajanAnsanm · Sòl ak Tontin",
+  "short_name": "LajanAnsanm",
+  "description": "Aplikasyon jesyon sòl ak tontin modèn, rapid e sekirize an Ayiti ak nan dyaspora a.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0f172a",
+  "theme_color": "#1e3a8a",
+  "lang": "ht",
+  "dir": "ltr",
+  "icons": [
+    {
+      "src": "/images/logo-icon-sm.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/images/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/images/logo-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

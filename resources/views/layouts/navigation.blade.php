@@ -5,12 +5,15 @@
             <div class="flex">
                 <!-- Logo -->
                 <div class="shrink-0 flex items-center">
-                    <a href="{{ route('dashboard') }}">
+                    <a href="{{ auth()->user() ? route('dashboard') : route('home') }}">
                         <x-application-logo class="block h-9 w-auto fill-current text-gray-800" />
                     </a>
                 </div>
 <x-nav-link :href="route('tontines.index')" :active="request()->routeIs('tontines.*')">
-    {{ __('Tontin') }}
+    {{ __('Sòl') }}
+</x-nav-link>
+<x-nav-link :href="route('memberships.index')" :active="request()->routeIs('memberships.*')">
+    {{ __('sòl mwen yo') }}
 </x-nav-link>
                 <!-- Navigation Links -->
                 <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
@@ -47,8 +50,7 @@
                             @csrf
 
                             <x-dropdown-link :href="route('logout')"
-                                    onclick="event.preventDefault();
-                                                this.closest('form').submit();">
+                                    x-on:click.prevent="$el.closest('form').submit()">
                                 {{ __('Log Out') }}
                             </x-dropdown-link>
                         </form>
@@ -74,6 +76,9 @@
             <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                 {{ __('Dashboard') }}
             </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('memberships.index')" :active="request()->routeIs('memberships.*')">
+                {{ __('sòl mwen yo') }}
+            </x-responsive-nav-link>
         </div>
 
         <!-- Responsive Settings Options -->
@@ -93,8 +98,7 @@
                     @csrf
 
                     <x-responsive-nav-link :href="route('logout')"
-                            onclick="event.preventDefault();
-                                        this.closest('form').submit();">
+                            x-on:click.prevent="$el.closest('form').submit()">
                         {{ __('Log Out') }}
                     </x-responsive-nav-link>
                 </form>

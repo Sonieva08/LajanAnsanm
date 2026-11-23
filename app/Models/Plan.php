@@ -80,4 +80,22 @@ class Plan extends Model
     {
         return $this->is_active && ! $this->is_free && ($this->priceFor('monthly') ?? 0) > 0;
     }
+
+    public function snapshotData(): array
+    {
+        return [
+            'slug' => $this->slug,
+            'name' => $this->name,
+            'description' => $this->description,
+            'badge' => $this->badge,
+            'is_highlighted' => $this->is_highlighted,
+            'is_free' => $this->is_free,
+            'price_monthly' => $this->price_monthly,
+            'price_quarterly' => $this->price_quarterly,
+            'price_yearly' => $this->price_yearly,
+            'max_active_tontines' => $this->max_active_tontines,
+            'max_members_per_tontine' => $this->max_members_per_tontine,
+            'features' => $this->features ?? [],
+        ];
+    }
 }

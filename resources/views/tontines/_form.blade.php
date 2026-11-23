@@ -18,7 +18,7 @@
     @endif
 
     <div>
-        <label for="name" class="label">{{ __('Non tontine a') }}</label>
+        <label for="name" class="label">{{ __('Non sòl la') }}</label>
         <input id="name" name="name" type="text" class="input" required autofocus
                value="{{ old('name', $tontine->name ?? '') }}" placeholder="Sòl Fanmi ak Zanmi">
         <x-input-error :messages="$errors->get('name')" class="mt-1" />
@@ -83,8 +83,9 @@
                 @endforeach
             </div>
         @endunless
-        <p class="font-body-sm text-body-sm text-on-surface-variant">
-            {{ __('Pousantaj sa a soustrè sou lajan benefisyè a resevwa a chak tou. Maksimòm') }} {{ \App\Models\Tontine::MAX_FEE_PERCENT }}%.
+        <p class="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1.5">
+            {{ __('Retni sou lajan benefisyè a.') }}
+            <x-hint>{{ __('Pousantaj sa a soustrè sou lajan benefisyè a resevwa a chak tou. Maksimòm') }} {{ \App\Models\Tontine::MAX_FEE_PERCENT }}%.</x-hint>
         </p>
 
         <div x-show="Number(pct) > 0 && Number(amount) > 0" x-cloak class="bg-primary-fixed/60 rounded-xl p-space-sm font-body-sm text-body-sm tabular-nums space-y-0.5">
@@ -108,6 +109,6 @@
 
     <div class="flex gap-3 bg-primary-fixed/60 text-on-primary-fixed-variant p-space-md rounded-xl font-body-sm text-body-sm">
         <span class="material-symbols-outlined text-[20px]">info</span>
-        <p>{{ __('Ou pral ajoute manm yo epi defini lòd benefisyè yo apre ou fin kreye tontin nan.') }}</p>
+        <p>{{ __('Ou ajoute manm yo apre ou fin kreye sòl la.') }}</p>
     </div>
 </div>

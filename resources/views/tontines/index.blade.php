@@ -1,5 +1,5 @@
 <x-app-layout>
-    <x-page-header :title="__('Tontin mwen yo')">
+    <x-page-header :title="__('sòl mwen yo')">
         <a href="{{ route('tontines.create') }}" class="btn-primary btn-sm"><span class="material-symbols-outlined text-[20px]">add</span> {{ __('Nouvo') }}</a>
     </x-page-header>
 
@@ -31,8 +31,8 @@
                 </div>
             </a>
         @empty
-            <x-empty-state art="tontine" :title="__('Ou pa gen tontin ankò')" :text="__('Kòmanse premye tontin kominotè w la kounye a pou w jere kotizasyon ak tiraj manm yo an sekirite.')"
-                :href="route('tontines.create')" :action="__('Kreye premye tontin ou')" />
+            <x-empty-state art="tontine" :title="__('Ou pa gen sòl ankò')" :text="__('Kòmanse premye sòl kominotè w la kounye a pou w jere kotizasyon ak tiraj manm yo an sekirite.')"
+                :href="route('tontines.create')" :action="__('Kreye premye sòl ou')" />
         @endforelse
     </div>
 </x-app-layout>
